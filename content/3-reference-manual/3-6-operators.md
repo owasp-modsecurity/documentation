@@ -5,6 +5,8 @@ weight: 6
 
 This section documents the operators currently available in ModSecurity.
 
+ModSecurity v2 looks operator names up case-insensitively (`@ipmatch`, `@ipMatch` and `@IPMATCH` all resolve to the same operator); the spellings below are the documented ones.
+
 ## beginsWith
 
 Returns true if the parameter string is found at the beginning of the input. Macro expansion is performed on the parameter string before comparison.
@@ -52,7 +54,7 @@ Your site has a wide **select**ion of computers.
 
 ## detectSQLi
 
-Returns true if SQL injection payload is found. This operator uses LibInjection to detect SQLi attacks.
+Returns true if SQL injection payload is found. This operator uses LibInjection to detect SQLi attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13.
 
 {{< secmeta v2="2.7.4" v3="yes" >}}
 
@@ -71,7 +73,7 @@ This operator supports the "capture" action.
 
 ## detectXSS
 
-Returns true if XSS injection is found. This operator uses LibInjection to detect XSS attacks.
+Returns true if XSS injection is found. This operator uses LibInjection to detect XSS attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13.
 
 {{< secmeta v2="2.8.0" v3="yes" >}}
 
@@ -125,6 +127,8 @@ If a value is provided that cannot be converted to an integer (i.e a string) thi
 The fuzzyHash operator uses the ssdeep, which is a program for computing context triggered piecewise hashes (CTPH). Also called fuzzy hashes, CTPH can match inputs that have homologies. Such inputs have sequences of identical bytes in the same order, although bytes in between these sequences may be different in both content and length.
 
 {{< secmeta v2="2.9.0" v3="yes" >}}
+
+The operator takes two parameters: the path of a file containing one ssdeep hash per line (a relative path is resolved against the directory of the configuration file) and a similarity threshold between 1 and 100; the operator matches when any hash scores at least the threshold. ModSecurity v2 must be built with ssdeep support, otherwise the operator fails at run time.
 
 For further information on ssdeep, visit its site: <http://ssdeep.sourceforge.net/>
 
@@ -222,6 +226,8 @@ Executes an external program for every variable in the target list. The contents
 {{< secmeta v2="yes" v3="yes" >}}
 
 The @inspectFile operator was initially designed for file inspection (hence the name), but it can also be used in any situation that requires decision making using external logic.
+
+An external program must print one line: output starting with `1` means the file is accepted (no match), anything else is treated as a rejection and the operator matches (the output is logged as the reason). A Lua script matches when its `main` function returns a string and does not match when it returns `nil`.
 
 The OWASP ModSecurity Core Rule Set (CRS) includes a utility script in the /util directory called runav.pl ([util/av-scanning/runav.pl](https://github.com/coreruleset/coreruleset/blob/v3.3/master/util/av-scanning/runav.pl) in CRS 3.3; CRS 4 no longer ships it) that allows the file approval mechanism to integrate with the ClamAV virus scanner. This is especially handy to prevent viruses and exploits from entering the web server through file upload.
 
@@ -532,7 +538,7 @@ As of v2.9.0-RC1 this operator also supports to load content served by an HTTPS 
 
 ## rbl
 
-Looks up the input value in the RBL (real-time block list) given as parameter. The parameter can be an IPv4 address or a hostname.
+Looks up the input value in the RBL (real-time block list) given as parameter. The input value can be an IPv4 address or a hostname; IPv6 addresses are not supported.
 
 {{< secmeta v2="yes" v3="yes" >}}
 
@@ -580,23 +586,11 @@ If you plan to manipulate live data by using @rsub with the STREAM_ variables, y
 
 {{% /notice %}}
 
-Regular expressions are handled by the PCRE library [1](http://www.pcre.org). ModSecurity compiles its regular expressions with the following settings:
-
-1.  The entire input is treated as a single line, even when there are newline characters present.
-2.  All matches are case-sensitive. If you wish to perform case-insensitive matching, you can either use the lowercase transformation function or force case-insensitive matching by prefixing the regular expression pattern with the (?i) modifier (a PCRE feature; you will find many similar features in the PCRE documentation). Also a flag [d] should be used if you want to escape the regex string chars when use macro expansion.
-3.  The PCRE_DOTALL and PCRE_DOLLAR_ENDONLY flags are set during compilation, meaning that a single dot will match any character, including the newlines, and a \$ end anchor will not match a trailing newline character.
-
-Regular expressions are a very powerful tool. You are strongly advised to read the PCRE documentation to get acquainted with its features.
-
-{{% notice note %}}
-
-This operator supports the "capture" action.
-
-{{% /notice %}}
+Unlike @rx, the regular expression is compiled through Apache's `ap_regex` API as a POSIX extended regular expression (no DOTALL or DOLLAR_ENDONLY settings). The optional flags after the last delimiter are `i` (case-insensitive match) and `d` (escape the regex metacharacters of the expanded macros when the pattern contains `%{...}`); any other flag is an error. The replacement string may reference the subexpressions of the match with `\1` to `\9`. Patterns containing macros are expanded and compiled on every evaluation.
 
 ## rx
 
-Performs a regular expression match of the pattern provided as parameter. **This is the default operator; the rules that do not explicitly specify an operator default to @rx**. ModSecurity v2 uses the PCRE library; libModSecurity v3 uses PCRE2 (since 3.0.7, with PCRE only when explicitly requested at build time).
+Performs a regular expression match of the pattern provided as parameter. **This is the default operator; the rules that do not explicitly specify an operator default to @rx**. ModSecurity v2 builds against PCRE2 by default since 2.9.9 (PCRE2 is supported since 2.9.7; PCRE is used only when `--with-pcre` is given at build time); libModSecurity v3 uses PCRE2 (since 3.0.7, with PCRE only when explicitly requested at build time).
 
 {{< secmeta v2="yes" v3="yes" >}}
 
@@ -621,6 +615,8 @@ Regular expressions are handled by the PCRE library [1](http://www.pcre.org). Mo
 
 Regular expressions are a very powerful tool. You are strongly advised to read the PCRE documentation to get acquainted with its features.
 
+Macro expansion is supported since ModSecurity 2.6.2: a pattern containing `%{...}` is expanded and compiled on every evaluation instead of once at startup.
+
 {{% notice note %}}
 
 libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions.
@@ -629,7 +625,7 @@ libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instea
 
 {{% notice note %}}
 
-This operator supports the "capture" action.
+This operator supports the "capture" action. ModSecurity v2 stores the whole match in TX:0 and up to nine subexpressions in TX:1 to TX:9; further subexpressions are not captured.
 
 {{% /notice %}}
 
@@ -716,7 +712,7 @@ SecRule ARGS "@validateByteRange 1-255" "id:179"
 
 {{% notice note %}}
 
-You can force requests to consist only of bytes from a certain byte range. This can be useful to avoid stack overflow attacks (since they usually contain "random" binary content). Default range values are 0 and 255, i.e. all byte values are allowed. This directive does not check byte range in a POST payload when multipart/form-data encoding (file upload) is used. Doing so would prevent binary files from being uploaded. However, after the parameters are extracted from such request they are checked for a valid range.
+You can force requests to consist only of bytes from a certain byte range. This can be useful to avoid stack overflow attacks (since they usually contain "random" binary content). The parameter is mandatory: a comma-separated list of byte values and `start-end` ranges, each between 0 and 255; whitespace around the values is tolerated by `atoi()` and anything not listed is reported as outside the range.
 
 {{% /notice %}}
 
@@ -805,9 +801,10 @@ SecRule ARGS "@validateUtf8Encoding" "id:193"
 
 The @validateUtf8Encoding operator detects the following problems:
 
-- **Not enough bytes**: UTF-8 supports two-, three-, four-, five-, and six-byte encodings. ModSecurity will locate cases when one or more bytes is/are missing from a character.
+- **Not enough bytes**: ModSecurity accepts one- to four-byte encodings (RFC 3629; a lead byte announcing a five- or six-byte sequence is reported as an invalid character). ModSecurity will locate cases when one or more bytes is/are missing from a character.
 - **Invalid characters**: The two most significant bits in most characters should be fixed to 0x80. Some attack techniques use different values as an evasion technique.
 - **Overlong characters**: ASCII characters are mapped directly into UTF-8, which means that an ASCII character is one UTF-8 character at the same time. However, in UTF-8 many ASCII characters can also be encoded with two, three, four, five, and six bytes. This is no longer legal in the newer versions of Unicode, but many older implementations still support it. The use of overlong UTF-8 characters is common for evasion.
+- **Restricted characters**: code points above U+10FFFF (lead byte 0xF5 or higher) and the UTF-16 surrogate range U+D800 to U+DFFF.
 
 - Most, but not all applications use UTF-8. If you are dealing with an application that does, validating that all request parameters are valid UTF-8 strings is a great way to prevent a number of evasion techniques that use the assorted UTF-8 weaknesses. False positives are likely if you use this operator in an application that does not use UTF-8.
 - Many web servers will also allow UTF-8 in request URIs. If yours does, you can verify the request URI using @validateUtf8Encoding.

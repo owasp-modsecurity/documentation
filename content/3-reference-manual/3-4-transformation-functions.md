@@ -42,7 +42,7 @@ Decodes a Base64-encoded string.
 ``` apache
 SecRule REQUEST_HEADERS:Authorization "^Basic ([a-zA-Z0-9]+=*)$" "phase:1,id:93,capture,chain,logdata:%{TX.1}"
   SecRule TX:1 ^(\w+): t:base64Decode,capture,chain
-    SecRule TX:1 ^(admin|root|backup)$ 
+    SecRule TX:1 ^(admin|root|backup)$
 ```
 
 The two engines treat malformed input differently. ModSecurity v2 (`apr_base64_decode`) decodes up to the first byte outside the Base64 alphabet and discards the rest. libModSecurity v3 (which uses a strict decoder) rejects the whole input and leaves the value unchanged when it contains a byte outside the alphabet, when its length is not a multiple of four (missing padding), or when data follows the padding; it does ignore line breaks. Use base64DecodeExt when a forgiving decoder is wanted.
@@ -65,9 +65,9 @@ Both engines decode `0x` (or `0X`) followed by at least one complete pair of hex
 
 {{< secmeta v2="2.6.0" v3="3.0.1" >}}
 
-Decodes a Base64-encoded string. Unlike base64Decode, this version uses a forgiving implementation, which ignores invalid characters. Available under this name as of 2.6.0 (earlier development releases called it decodeBase64Ext).
+Decodes a Base64-encoded string. Unlike base64Decode, this version uses a more forgiving implementation that ignores whitespace and misplaced padding. Available under this name as of 2.6.0 (earlier development releases called it decodeBase64Ext).
 
-Both engines skip every byte outside the Base64 alphabet instead of stopping, and both also accept the URL-safe alphabet (`-` and `_`) since ModSecurity 2.9.15 and libModSecurity 3.0.17. ModSecurity v2 stops decoding at the first NUL byte in the input; libModSecurity v3 processes every byte.
+Both engines accept the URL-safe alphabet (`-` and `_`) since ModSecurity 2.9.15 and libModSecurity 3.0.17. ModSecurity v2 skips only space, tab, CR, LF and padding (`=`) characters: any other byte outside the Base64 alphabet makes the whole decode fail and the output is an empty string. It also stops decoding at the first NUL byte in the input. libModSecurity v3 skips every byte outside the alphabet and processes every byte.
 
 See blog post on Base64Decoding evasion issues on PHP sites - <http://blog.spiderlabs.com/2010/04/impedance-mismatch-and-base64.html>
 
@@ -103,10 +103,10 @@ The cmdLine transformation function avoids this problem by manipulating the vari
 - deleting spaces before a slash [/]
 - deleting spaces before an open parenthesis [(]
 - replacing all commas [,] and semicolon [;] into a space
-- replacing all multiple spaces (including tab, newline, etc.) into one space
+- replacing all multiple spaces (including tab, carriage return and newline) into one space
 - transform all characters to lowercase
 
-ModSecurity v2 processes the value as a C string and stops at the first NUL byte; libModSecurity v3 processes every byte.
+ModSecurity v2 registers this function as `cmdline`; because transformation names are matched case-insensitively, `t:cmdLine` works as well. ModSecurity v2 processes the value as a C string and stops at the first NUL byte; libModSecurity v3 processes every byte.
 
 **Example Usage:**
 
@@ -132,13 +132,15 @@ Decodes characters encoded using the CSS 2.x escape rules [syndata.html#characte
 
 {{< secmeta v2="yes" v3="3.0.3" >}}
 
-Decodes ANSI C escape sequences: `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\\`, `\?`, `\'`, `\"`, `\xHH` (hexadecimal), `\0OOO` (octal). A backslash before a byte that does not begin a recognized sequence is dropped and the byte is kept (`\8` becomes `8`, `\xag` becomes `xag`); only a lone trailing backslash is left in the output. Both engines behave the same way; libModSecurity v3 accepts the function since 3.0.3 (earlier 3.0.x releases fail to parse it).
+Decodes ANSI C escape sequences: `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\\`, `\?`, `\'`, `\"`, `\xHH` (exactly two hexadecimal digits, `\XHH` is also accepted), `\OOO` (one to three octal digits, producing a single byte). A backslash before a byte that does not begin a recognized sequence is dropped and the byte is kept (`\8` becomes `8`, `\xag` becomes `xag`); only a lone trailing backslash is left in the output. Both engines behave the same way; libModSecurity v3 accepts the function since 3.0.3 (earlier 3.0.x releases fail to parse it).
 
 ## hexDecode
 
 {{< secmeta v2="yes" v3="yes" >}}
 
 Decodes a string that has been encoded using the same algorithm as the one used in hexEncode (see following entry).
+
+ModSecurity v2 does not validate the input: every pair of characters is converted to a byte even when it contains non-hexadecimal characters (which yield meaningless bytes), and a trailing unpaired character is dropped.
 
 ## hexEncode
 
@@ -168,7 +170,7 @@ Since ModSecurity 2.9.15 and libModSecurity 3.0.17 both engines decode every nam
 
 {{< secmeta v2="2.5.0" v3="yes" >}}
 
-Decodes JavaScript escape sequences. If a \uHHHH code is in the range of FF01-FF5E (the full width ASCII codes), then the higher byte is used to detect and adjust the lower byte. Otherwise, only the lower byte will be used and the higher byte zeroed (leading to possible loss of information).
+Decodes JavaScript escape sequences: `\uHHHH`, `\xHH`, `\OOO` (one to three octal digits, producing a single byte), `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`; a backslash before any other byte is removed and the byte is kept. If a \uHHHH code is in the range of FF01-FF5E (the full width ASCII codes), then the higher byte is used to detect and adjust the lower byte. Otherwise, only the lower byte will be used and the higher byte zeroed (leading to possible loss of information).
 
 ## length
 
@@ -270,13 +272,15 @@ Replaces each occurrence of a C-style comment (/* ... */) with a single space (m
 
 {{< secmeta v2="2.6.2" v3="yes" >}}
 
-Removes common comments chars (/*, */, --, #).
+Removes common comments chars (`/*`, `*/`, `<!--`, `-->`, `--`, `#`).
 
 ## removeComments
 
 {{< secmeta v2="2.6.2" v3="yes" >}}
 
-Removes each occurrence of comment (/* ... */, --, #). Multiple consecutive occurrences of which will not be compressed.
+Removes each occurrence of comment (`/* ... */`, `<!-- ... -->`, `--`, `#`). Multiple consecutive occurrences of which will not be compressed.
+
+In ModSecurity v2, `/* ... */` and `<!-- ... -->` comments are removed entirely (an unterminated one is replaced with a single space), while `--` and `#` start a comment that extends to the end of the input, so everything from that point on is removed. Adjacent comments (for example `/**//**/`) are handled correctly since 2.9.15.
 
 {{% notice note %}}
 
@@ -310,21 +314,21 @@ This function exists only in libModSecurity v3; ModSecurity v2 does not register
 
 Like urlDecode, but with support for the Microsoft-specific %u encoding. If the code is in the range of FF01-FF5E (the full-width ASCII codes), then the higher byte is used to detect and adjust the lower byte. Otherwise, only the lower byte will be used and the higher byte zeroed.
 
-When a [SecUnicodeMapFile]({{% relref "3-reference-manual/3-2-configuration-directives#secunicodemapfile" %}}) code page is loaded, both engines map the `%uHHHH` code point through that table before falling back to the rules above. Invalid `%` sequences are left as is.
+When a [SecUnicodeMapFile]({{% relref "3-reference-manual/3-2-configuration-directives#secunicodemapfile" %}}) is loaded and a code page is selected (ModSecurity v2 requires both: the second argument of SecUnicodeMapFile or [SecUnicodeCodePage]({{% relref "3-reference-manual/3-2-configuration-directives#secunicodecodepage" %}})), both engines map the `%uHHHH` code point through that table before falling back to the rules above. Invalid `%` sequences are left as is.
 
 ## urlEncode
 
 {{< secmeta v2="yes" v3="3.0.3" >}}
 
-Encodes input string using URL encoding.
+Encodes input string using URL encoding. Letters, digits and `*` are kept as they are, a space becomes `+`, and every other byte becomes `%HH` (lowercase hexadecimal).
 
 ## utf8toUnicode
 
 {{< secmeta v2="2.7.0" v3="yes" >}}
 
-Converts all UTF-8 character sequences to Unicode (using '%uHHHH' format). This help input normalization specially for non-english languages minimizing false-positives and false-negatives.
+Converts all UTF-8 character sequences to Unicode (using '%uHHHH' format, lowercase hexadecimal). This help input normalization specially for non-english languages minimizing false-positives and false-negatives. ModSecurity v2 registers this function as `Utf8toUnicode`; because transformation names are matched case-insensitively, `t:utf8toUnicode` works as well.
 
-Malformed input is handled differently: ModSecurity v2 leaves malformed bytes unchanged, while libModSecurity v3 drops a lead byte whose sequence is incomplete or invalid. ModSecurity v2 also processes the value as a C string, so a NUL byte that is not followed by a continuation byte truncates the value.
+Malformed input is handled differently: ModSecurity v2 leaves malformed bytes (invalid lead or continuation bytes, overlong forms, surrogates and code points above U+10FFFF) unchanged, while libModSecurity v3 drops a lead byte whose sequence is incomplete or invalid. ModSecurity v2 encodes a NUL byte together with the byte that follows it as `%u00HH`.
 
 ## sha1
 

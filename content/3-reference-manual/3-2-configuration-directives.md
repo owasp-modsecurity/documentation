@@ -42,9 +42,11 @@ SecAction nolog,phase:1,initcol:RESOURCE=%{REQUEST_FILENAME}
 
 Specifies which character to use as the separator for application/x-www-form- urlencoded content.
 
-{{< secmeta syntax="SecArgumentSeparator character" default="&" scope="Main(< 2.7.0), Any(2.7.0)" v2="2.0.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecArgumentSeparator character" default="&" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
 This directive is needed if a backend web application is using a nonstandard argument separator. Applications are sometimes (very rarely) written to use a semicolon separator. You should not change the default setting unless you establish that the application you are working with requires a different separator. If this directive is not set properly for each web application, then ModSecurity will not be able to parse the arguments appropriately and the effectiveness of the rule matching will be significantly decreased.
+
+The parameter must be a single character. Before 2.7.0 the directive was only accepted in the main server configuration; since 2.7.0 it can be used in any configuration context.
 
 ## SecArgumentsLimit
 
@@ -68,7 +70,7 @@ Without such a matching rule, an attacker could potentially evade detection by p
 
 Configures the audit logging engine.
 
-{{< secmeta syntax="SecAuditEngine RelevantOnly" default="Off" scope="Any" v2="2.0.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecAuditEngine On|Off|RelevantOnly" default="Off" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
 The SecAuditEngine directive is used to configure the audit engine, which logs complete transactions. ModSecurity is currently able to log most, but not all transactions. Transactions involving errors (e.g., 400 and 404 transactions) use a different execution path, which ModSecurity does not support.
 
@@ -127,9 +129,9 @@ The purpose of SecAuditLog2 is to make logging to two remote servers possible, w
 
 Configures the mode (permissions) of any directories created for the concurrent audit logs, using an octal mode value as parameter (as used in chmod).
 
-{{< secmeta syntax=`SecAuditLogDirMode octal_mode|"default"` example="SecAuditLogDirMode 02750" default="0600" scope="Any" v2="2.5.10" v3="3.0.0" >}}
+{{< secmeta syntax=`SecAuditLogDirMode octal_mode|"default"` example="SecAuditLogDirMode 02750" default="0750" scope="Any" v2="2.5.10" v3="3.0.0" >}}
 
-The default mode for new audit log directories (0600) only grants read/write access to the owner (typically the account under which Apache is running, for example apache). If access from other accounts is needed (e.g., for use with mpm-itk), then you may use this directive to grant additional read and/or write privileges. You should use this directive with caution to avoid exposing potentially sensitive data to unauthorized users. Using the value default as parameter reverts the configuration back to the default setting. This feature is not available on operating systems not supporting octal file modes.
+The default mode for new audit log directories (0750) grants full access to the owner (typically the account under which Apache is running, for example apache) and read/search access to the group. If access from other accounts is needed (e.g., for use with mpm-itk), then you may use this directive to grant additional read and/or write privileges. You should use this directive with caution to avoid exposing potentially sensitive data to unauthorized users. Using the value default as parameter reverts the configuration back to the default setting. This feature is not available on operating systems not supporting octal file modes.
 
 Example:
 
@@ -159,9 +161,9 @@ The JSON format is only available if ModSecurity was compiled with support to JS
 
 Configures the mode (permissions) of any files created for concurrent audit logs using an octal mode (as used in chmod). See SecAuditLogDirMode for controlling the mode of created audit log directories.
 
-{{< secmeta syntax=`SecAuditLogFileMode octal_mode|"default"` example="SecAuditLogFileMode 00640" default="0600" scope="Any" v2="2.5.10" v3="3.0.0" >}}
+{{< secmeta syntax=`SecAuditLogFileMode octal_mode|"default"` example="SecAuditLogFileMode 00640" default="0640" scope="Any" v2="2.5.10" v3="3.0.0" >}}
 
-This feature is not available on operating systems not supporting octal file modes. The default mode (0600) only grants read/write access to the account writing the file. If access from another account is needed (using mpm-itk is a good example), then this directive may be required. However, use this directive with caution to avoid exposing potentially sensitive data to unauthorized users. Using the value “default” will revert back to the default setting.
+This feature is not available on operating systems not supporting octal file modes. The default mode (0640) grants read/write access to the account writing the file and read access to its group. If access from another account is needed (using mpm-itk is a good example), then this directive may be required. However, use this directive with caution to avoid exposing potentially sensitive data to unauthorized users. Using the value “default” will revert back to the default setting.
 
 {{% notice note %}}
 
@@ -319,7 +321,7 @@ This directive is not allowed inside VirtualHosts. If enabled, it must be placed
 
 ## SecCollectionTimeout
 
-Specifies the collections timeout. Default is 3600 seconds.
+Specifies the collections timeout. Default is 3600 seconds. ModSecurity v2 accepts values from 0 to 2592000 seconds (30 days).
 
 libModSecurity v3 accepts the directive (so that crs-setup.conf loads) but ignores it: v3 collections do not expire through this setting.
 
@@ -343,7 +345,7 @@ In libModSecurity v3 the component signature is currently only included in the a
 
 Configures the connections engine. This directive affect the directives: SecConnReadStateLimit and SecConnWriteStateLimit.
 
-{{< secmeta syntax="SecConnEngine On|Off|DetectionOnly" example="SecConnEngine On" scope="Any" v2="2.8.0" v3="no" >}}
+{{< secmeta syntax="SecConnEngine On|Off|DetectionOnly" example="SecConnEngine On" default="Off" scope="Any" v2="2.8.0" v3="no" >}}
 
 Possible values are (Same as SecRuleEngine):
 
@@ -355,7 +357,7 @@ Possible values are (Same as SecRuleEngine):
 
 Enables content injection using actions append and prepend.
 
-{{< secmeta syntax="SecContentInjection On|Off" example="SecContentInjection On" scope="Any" v2="2.5.0" v3="no" >}}
+{{< secmeta syntax="SecContentInjection On|Off" example="SecContentInjection On" default="Off" scope="Any" v2="2.5.0" v3="no" >}}
 
 This directive provides an easy way to control content injection, no matter what the rules want to do. It is not necessary to have response body buffering enabled in order to use content injection.
 
@@ -376,6 +378,8 @@ The possible values are:
 - **0**: Use version 0 (Netscape) cookies. This is what most applications use. It is the default value.
 - **1**: Use version 1 cookies.
 
+Since 2.7.0 the directive can be used in any configuration context; before that it was only accepted in the main server configuration.
+
 {{% notice note %}}
 
 Only version 0 (Netscape) cookies is currently supported on libModSecurity (v3)
@@ -386,7 +390,9 @@ Only version 0 (Netscape) cookies is currently supported on libModSecurity (v3)
 
 Specifies which character to use as the separator for cookie v0 content.
 
-{{< secmeta syntax="SecCookieV0Separator character" scope="Any" v2="2.7.0" v3="no" >}}
+{{< secmeta syntax="SecCookieV0Separator character" default=";" scope="Any" v2="2.7.0" v3="no" >}}
+
+The parameter must be a single character. When the directive is not set, ModSecurity v2 splits version 0 cookies on `;`, falling back to `,` when the Cookie header contains no semicolon but a comma followed by a space. The source registers the directive as `SecCookiev0Separator`; Apache matches directive names case-insensitively, so both spellings work.
 
 ## SecDataDir
 
@@ -414,7 +420,7 @@ Path to the ModSecurity debug log file.
 
 Configures the verboseness of the debug log data.
 
-{{< secmeta syntax="SecDebugLogLevel 0|1|2|3|4|5|6|7|8|9" example="SecDebugLogLevel 4" scope="Any" v2="2.0.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecDebugLogLevel 0|1|2|3|4|5|6|7|8|9" example="SecDebugLogLevel 4" default="0" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
 In ModSecurity v2, messages at levels 1–3 are always copied to the Apache error log. Therefore you can always use level 0 as the default logging level in production if you are very concerned with performance. Having said that, the best value to use is 3. Higher logging levels are not recommended in production, because the heavy logging affects performance adversely. In libModSecurity v3, always having the debug log active in a production environment is typically not advised; even when investigating a specific issue be aware that using a value of 4 or higher can impact performance significantly.
 
@@ -434,7 +440,7 @@ Defines the default list of actions for a particular phase, which will be inheri
 
 {{< secmeta syntax=`SecDefaultAction "action1,action2,action3"` example=`SecDefaultAction "phase:2,log,auditlog,deny,status:403,tag:'SLA 24/7'"` default="phase:2,log,auditlog,pass" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
-Every rule following a previous `SecDefaultAction` directive in the same configuration context will inherit its settings unless more specific actions are used. Every `SecDefaultAction` directive must specify a disruptive action and a processing phase and cannot contain metadata actions.
+Every rule following a previous `SecDefaultAction` directive in the same configuration context will inherit its settings unless more specific actions are used. Every `SecDefaultAction` directive must specify a disruptive action and a processing phase and cannot contain metadata actions. In ModSecurity v2 it must not contain the `chain`, `skip` or `skipAfter` actions either, and using `severity`, `logdata` or transformations (`t:`) in it is deprecated and logs a warning at startup.
 
 {{% notice warning %}}
 
@@ -471,7 +477,7 @@ Users must enable stream output variables and content injection.
 
 Define the key that will be used by HMAC.
 
-{{< secmeta syntax="SecHashKey rand|TEXT KeyOnly|SessionID|RemoteIP" example=`SecHashKey "this_is_my_key" KeyOnly` scope="Any" v2="2.7.1" v3="no" >}}
+{{< secmeta syntax="SecHashKey rand|TEXT KeyOnly|SessionID|RemoteIP" example=`SecHashKey "this_is_my_key" KeyOnly` default="rand KeyOnly" scope="Any" v2="2.7.1" v3="no" >}}
 
 ModSecurity hash engine will append, if specified, the user's session id or remote ip to the key before the MAC operation. If the first parameter is "rand" then a random key will be generated and used by the engine.
 
@@ -479,7 +485,7 @@ ModSecurity hash engine will append, if specified, the user's session id or remo
 
 Define the parameter name that will receive the MAC hash.
 
-{{< secmeta syntax="SecHashParam TEXT" example=`SecHashParam "hmac"` scope="Any" v2="2.7.1" v3="no" >}}
+{{< secmeta syntax="SecHashParam TEXT" example=`SecHashParam "hmac"` default="crypt" scope="Any" v2="2.7.1" v3="no" >}}
 
 ModSecurity hash engine will add a new parameter to protected HTML elements containing the MAC hash.
 
@@ -496,7 +502,7 @@ The possible values for TYPE are:
 - **HashHref**: Used to sign href= html elements
 - **HashFormAction**: Used to sign form action= html elements
 - **HashIframeSrc**: Used to sign iframe src= html elements
-- **HashframeSrc**: Used to sign frame src= html elements
+- **HashFrameSrc**: Used to sign frame src= html elements
 - **HashLocation**: Used to sign Location response header
 
 {{% notice note %}}
@@ -518,7 +524,7 @@ The possible values for TYPE are:
 - **HashHref**: Used to sign href= html elements
 - **HashFormAction**: Used to sign form action= html elements
 - **HashIframeSrc**: Used to sign iframe src= html elements
-- **HashframeSrc**: Used to sign frame src= html elements
+- **HashFrameSrc**: Used to sign frame src= html elements
 - **HashLocation**: Used to sign Location response header
 
 {{% notice note %}}
@@ -531,9 +537,9 @@ This directive is used to sign the elements however user must use the @validateH
 
 Defines the path to the database that will be used for geolocation lookups.
 
-{{< secmeta syntax="SecGeoLookupDb /path/to/db" example="SecGeoLookupDb /path/to/GeoLiteCity.dat" scope="Any" v2="2.5.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecGeoLookupDb /path/to/db" example="SecGeoLookupDb /path/to/GeoLiteCity.dat" scope="Main" v2="2.5.0" v3="3.0.0" >}}
 
-ModSecurity v2 relies on the free geolocation databases (GeoLite City and GeoLite Country) that can be obtained from MaxMind [1](http://www.maxmind.com). ModSecurity v2 only supports the legacy GeoIP format; MaxMind's newer GeoIP2 format is not supported there.
+ModSecurity v2 relies on the free geolocation databases (GeoLite City and GeoLite Country) that can be obtained from MaxMind [1](http://www.maxmind.com). ModSecurity v2 only supports the legacy GeoIP format; MaxMind's newer GeoIP2 format is not supported there. The v2 source registers the directive as `SecGeoLookupDB` (Apache matches directive names case-insensitively). A relative path is resolved against the directory of the configuration file that contains the directive.
 
 libModSecurity v3 supports the newer GeoIP2 (`.mmdb`) format through libmaxminddb (since 3.0.1), and the legacy GeoIP format when built with `--with-geoip`. The build must enable one of them, otherwise the directive fails to load.
 
@@ -547,9 +553,9 @@ Recent versions of libModSecurity v3 require libmaxminddb >= 1.4.2 (libmaxminddb
 
 Defines the path to the database that will be used for Google Safe Browsing (GSB) lookups.
 
-{{< secmeta syntax="SecGsbLookupDb /path/to/db" example="SecGsbLookupDb /path/to/GsbMalware.dat" scope="Any" v2="2.6.0" v3="no" >}}
+{{< secmeta syntax="SecGsbLookupDb /path/to/db" example="SecGsbLookupDb /path/to/GsbMalware.dat" scope="Main" v2="2.6.0" v3="no" >}}
 
-ModSecurity relies on the free Google Safe Browsing database that can be obtained from the Google GSB API [1](http://code.google.com/apis/safebrowsing/).
+ModSecurity relies on the free Google Safe Browsing database that can be obtained from the Google GSB API [1](http://code.google.com/apis/safebrowsing/). The source registers the directive as `SecGsbLookupDB` (Apache matches directive names case-insensitively). A relative path is resolved against the directory of the configuration file that contains the directive.
 
 {{% notice note %}}
 
@@ -561,11 +567,11 @@ Deprecated in 2.7.0 after Google dev team decided to not allow the database down
 
 Configures an external program that will receive the information about every transaction via piped logging.
 
-{{< secmeta syntax="SecGuardianLog |/path/to/httpd-guardian" example="SecGuardianLog |/usr/local/apache/bin/httpd-guardian" scope="Main" v2="2.0.0" v3="no" >}}
+{{< secmeta syntax="SecGuardianLog |/path/to/httpd-guardian [env=[!]VARIABLE]" example="SecGuardianLog |/usr/local/apache/bin/httpd-guardian" scope="Main" v2="2.0.0" v3="no" >}}
 
 Guardian logging is designed to send the information about every request to an external program. Because Apache is typically deployed in a multiprocess fashion, which makes information sharing between processes difficult, the idea is to deploy a single external process to observe all requests in a stateful manner, providing additional protection.
 
-Currently the only tool known to work with guardian logging is httpd-guardian, which is part of the Apache httpd tools project [1](http://apache-tools.cvs.sourceforge.net/viewvc/apache-tools/apache-tools/). The httpd-guardian tool is designed to defend against denial of service attacks. It uses the blacklist tool (from the same project) to interact with an iptables-based (on a Linux system) or pf-based (on a BSD system) firewall, dynamically blacklisting the offending IP addresses. It can also interact with SnortSam [2](http://www.snortsam.net). Assuming httpd-guardian is already configured (look into the source code for the detailed instructions), you only need to add one line to your Apache configuration to deploy it:
+Currently the only tool known to work with guardian logging is httpd-guardian, which is part of the Apache httpd tools project [1](http://apache-tools.cvs.sourceforge.net/viewvc/apache-tools/apache-tools/). The httpd-guardian tool is designed to defend against denial of service attacks. It uses the blacklist tool (from the same project) to interact with an iptables-based (on a Linux system) or pf-based (on a BSD system) firewall, dynamically blacklisting the offending IP addresses. It can also interact with SnortSam [2](http://www.snortsam.net). Assuming httpd-guardian is already configured (look into the source code for the detailed instructions), you only need to add one line to your Apache configuration to deploy it. The optional second parameter restricts guardian logging to requests for which the given environment variable is set (or, with the `!` prefix, not set), as with Apache's `CustomLog`:
 
 ``` apache
 SecGuardianLog |/path/to/httpd-guardian
@@ -581,7 +587,7 @@ This directive is not allowed inside VirtualHosts. If enabled, it must be placed
 
 Configures the user's registered Honeypot Project HTTP BL API Key to use with @rbl.
 
-{{< secmeta syntax="SecHttpBlKey [12 char access key]" example="SecHttpBlKey whdkfieyhtnf" scope="Main" v2="2.7.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecHttpBlKey [12 char access key]" example="SecHttpBlKey whdkfieyhtnf" scope="Any" v2="2.7.0" v3="3.0.0" >}}
 
 If the @rbl operator uses the dnsbl.httpbl.org RBL (http://www.projecthoneypot.org/httpbl_api.php) you must provide an API key. This key is registered to individual users and is included within the RBL DNS requests.
 
@@ -589,7 +595,7 @@ If the @rbl operator uses the dnsbl.httpbl.org RBL (http://www.projecthoneypot.o
 
 Configures how to respond when rule processing fails.
 
-{{< secmeta syntax="SecInterceptOnError On|Off" example="SecInterceptOnError On" scope="Main" v2="2.6.0" v3="no" >}}
+{{< secmeta syntax="SecInterceptOnError On|Off" example="SecInterceptOnError On" default="Off" scope="Any" v2="2.6.0" v3="no" >}}
 
 When an operator execution fails, that is it returns greater than 0, this directive configures how to react. When set to "Off", the rule is just ignored and the engine will continue executing the rules in phase. When set to "On", the rule will be just dropped and no more rules will be executed in the same phase, also no interception is made.
 
@@ -646,17 +652,19 @@ This directive is not allowed inside VirtualHosts. If enabled, it must be placed
 
 Establishes a per-IP address limit of how many connections are allowed to be in SERVER_BUSY_READ state.
 
-{{< secmeta syntax="SecReadStateLimit LIMIT" example="SecReadStateLimit 50" default="0 (no limit)" scope="Main" v2="2.5.13" v3="no" >}}
+{{< secmeta syntax="SecReadStateLimit LIMIT" example="SecReadStateLimit 50" default="0 (no limit)" scope="Any" v2="2.5.13" v3="no" >}}
 
-For v2.8.0 or newest refer to SecConnReadStateLimit.
+Deprecated since 2.8.0: it is an alias of [SecConnReadStateLimit](#secconnreadstatelimit), accepts the same parameters (including the optional IP match operator) and logs a deprecation warning at startup.
 
 ## SecConnReadStateLimit
 
 Establishes a per-IP address limit of how many connections are allowed to be in SERVER_BUSY_READ state.
 
-{{< secmeta syntax="SecConnReadStateLimit LIMIT OPTIONAL_IP_MATCH_OPERATOR" example=`SecConnReadStateLimit 50 "!@ipMatch 127.0.0.1"` default="0 (no limit)" scope="Main" v2="2.8.0" v3="no" >}}
+{{< secmeta syntax="SecConnReadStateLimit LIMIT OPTIONAL_IP_MATCH_OPERATOR" example=`SecConnReadStateLimit 50 "!@ipMatch 127.0.0.1"` default="0 (no limit)" scope="Any" v2="2.8.0" v3="no" >}}
 
 This measure is effective against Slowloris-style attacks from a single IP address, but it may not be as good against modified attacks that work by slowly sending request body content. This is because Apache to switches state to SERVER_BUSY_WRITE once request headers have been read. As an alternative, consider mod_reqtimeout (part of Apache as of 2.2.15), which is expected be effective against both attack types. See Blog post on mitigating slow DoS attacks - <http://blog.spiderlabs.com/2010/11/advanced-topic-of-the-week-mitigating-slow-http-dos-attacks.html>. v2.8.0 and newest supports the @ipMatch, @ipMatchF and @ipMatchFromFile operator along with the its negative (e.g. !@ipMatch) these were used to create suspicious or whitelist. When a suspicious list is informed, just the IPs that belongs to the list will be filtered. A combination of suspicious and whitelist is possible by using multiple definitions of SecConnReadStateLimit, note, however, that the limit will be always overwrite by its successor.
+
+LIMIT must be greater than zero.
 
 **Note:** This functionality is Apache only.
 
@@ -666,23 +674,25 @@ This measure is effective against Slowloris-style attacks from a single IP addre
 
 Define a sensor ID that will be present into log part H.
 
-{{< secmeta syntax="SecSensorId TEXT" example="SecSensorId WAFSensor01" scope="Main" v2="2.7.0" v3="no" >}}
+{{< secmeta syntax="SecSensorId TEXT" example="SecSensorId WAFSensor01" default="default" scope="Main" v2="2.7.0" v3="no" >}}
 
 ## SecWriteStateLimit
 
 Establishes a per-IP address limit of how many connections are allowed to be in SERVER_BUSY_WRITE state.
 
-{{< secmeta syntax="SecWriteStateLimit LIMIT" example="SecWriteStateLimit 50" default="0 (no limit)" scope="Main" v2="2.6.0" v3="no" >}}
+{{< secmeta syntax="SecWriteStateLimit LIMIT" example="SecWriteStateLimit 50" default="0 (no limit)" scope="Any" v2="2.6.0" v3="no" >}}
 
-For v2.8.0 or newest refer to SecConnWriteStateLimit.
+Deprecated since 2.8.0: it is an alias of [SecConnWriteStateLimit](#secconnwritestatelimit), accepts the same parameters (including the optional IP match operator) and logs a deprecation warning at startup.
 
 ## SecConnWriteStateLimit
 
 Establishes a per-IP address limit of how many connections are allowed to be in SERVER_BUSY_WRITE state.
 
-{{< secmeta syntax="SecConnWriteStateLimit LIMIT OPTIONAL_IP_MATCH_OPERATOR" example=`SecConnWriteStateLimit 50 "!@ipMatch 127.0.0.1"` default="0 (no limit)" scope="Main" v2="2.8.0" v3="no" >}}
+{{< secmeta syntax="SecConnWriteStateLimit LIMIT OPTIONAL_IP_MATCH_OPERATOR" example=`SecConnWriteStateLimit 50 "!@ipMatch 127.0.0.1"` default="0 (no limit)" scope="Any" v2="2.8.0" v3="no" >}}
 
 This measure is effective against Slow DoS request body attacks. v2.8.0 and newest supports the @ipMatch, @ipMatchF and @ipMatchFromFile operator along with the its negative (e.g. !@ipMatch) these were used to create suspicious or whitelist. When a suspicious list is informed, just the IPs that belongs to the list will be filtered. A combination of suspicious and whitelist is possible by using multiple definitions of SecConnReadStateLimit, note, however, that the limit will be always overwrite by its successor.
+
+LIMIT must be greater than zero.
 
 **Note:** This functionality is Apache only.
 
@@ -740,6 +750,8 @@ Along with the key, supplied by the users, ModSecurity will also send its Unique
 `- ModSec-key`
 
 The optional option "crypto" tells ModSecurity to expect some encrypted content from server. The utilization of SecRemoteRules is only allowed over TLS, thus, this option may not be necessary.
+
+In ModSecurity v2 the directive can appear only once, the URL must begin with `https`, and the `crypto` option requires a build with APR crypto support.
 
 {{% notice note %}}
 
@@ -800,7 +812,7 @@ Configures the maximum request body size ModSecurity will accept for buffering.
 
 {{< secmeta syntax="SecRequestBodyLimit LIMIT_IN_BYTES" example="SecRequestBodyLimit 134217728" default="134217728 (128 MB) (v2); no limit (v3)" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
-Anything over the limit will be rejected with status code 413 (Request Entity Too Large). There is a hard limit of 1 GB.
+Anything over the limit will be rejected with status code 413 (Request Entity Too Large). ModSecurity v2 enforces the 1 GB hard limit only on `ctl:requestBodyLimit`; the directive itself accepts any positive value.
 
 In ModSecurity v2 the default is 134217728 bytes (128 MB). libModSecurity v3 applies no limit unless the directive is set, and leaves the rejection status code to the connector.
 
@@ -816,7 +828,7 @@ Configures the maximum request body size ModSecurity will accept for buffering, 
 
 {{< secmeta syntax="SecRequestBodyNoFilesLimit NUMBER_IN_BYTES" example="SecRequestBodyNoFilesLimit 131072" default="1048576 (1 MB) (v2); no limit (v3)" scope="Any" v2="2.5.0" v3="3.0.7" >}}
 
-Generally speaking, the default value is not small enough. For most applications, you should be able to reduce it down to 128 KB or lower. Anything over the limit will be rejected with status code 413 (Request Entity Too Large). There is a hard limit of 1 GB.
+Generally speaking, the default value is not small enough. For most applications, you should be able to reduce it down to 128 KB or lower. Anything over the limit will be rejected with status code 413 (Request Entity Too Large). ModSecurity v2 accepts any positive value; no hard limit is enforced for this directive.
 
 In ModSecurity v2 the default is 1048576 bytes (1 MB). libModSecurity v3 accepts the directive since 3.0.0 but only enforces it since 3.0.7, and applies no limit unless the directive is set.
 
@@ -824,7 +836,7 @@ In ModSecurity v2 the default is 1048576 bytes (1 MB). libModSecurity v3 accepts
 
 Controls what happens once a request body limit, configured with SecRequestBodyLimit, is encountered
 
-{{< secmeta syntax="SecRequestBodyLimitAction Reject|ProcessPartial" example="SecRequestBodyLimitAction ProcessPartial" scope="Any" v2="2.6.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecRequestBodyLimitAction Reject|ProcessPartial" example="SecRequestBodyLimitAction ProcessPartial" default="Reject" scope="Any" v2="2.6.0" v3="3.0.0" >}}
 
 By default, ModSecurity will reject a request body that is longer than specified. This is problematic especially when ModSecurity is being run in DetectionOnly mode and the intent is to be totally passive and not take any disruptive actions against the transaction. With the ability to choose what happens once a limit is reached, site administrators can choose to inspect only the first part of the request, the part that can fit into the desired limit, and let the rest through. This is not ideal from a possible evasion issue perspective, however it may be acceptable under certain circumstances.
 
@@ -859,6 +871,12 @@ Controls what happens once a response body limit, configured with SecResponseBod
 {{< secmeta syntax="SecResponseBodyLimitAction Reject|ProcessPartial" example="SecResponseBodyLimitAction ProcessPartial" default="Reject" scope="Any" v2="2.5.0" v3="3.0.0" >}}
 
 By default, ModSecurity will reject a response body that is longer than specified. Some web sites, however, will produce very long responses, making it difficult to come up with a reasonable limit. Such sites would have to raise the limit significantly to function properly, defying the purpose of having the limit in the first place (to control memory consumption). With the ability to choose what happens once a limit is reached, site administrators can choose to inspect only the first part of the response, the part that can fit into the desired limit, and let the rest through. Some could argue that allowing parts of responses to go uninspected is a weakness. This is true in theory, but applies only to cases in which the attacker controls the output (e.g., can make it arbitrary long). In such cases, however, it is not possible to prevent leakage anyway. The attacker could compress, obfuscate, or even encrypt data before it is sent back, and therefore bypass any monitoring device.
+
+{{% notice note %}}
+
+When SecRuleEngine is set to DetectionOnly, ModSecurity v2 forces SecResponseBodyLimitAction to ProcessPartial, as it does for SecRequestBodyLimitAction.
+
+{{% /notice %}}
 
 ## SecResponseBodyMimeType
 
@@ -944,7 +962,7 @@ In ModSecurity v2 the default is Off. libModSecurity v3 leaves the value unset, 
 
 Set a performance threshold for rules. Rules that spend at least the time defined will be logged into audit log Part H as Rules-Performance-Info in the format id=usec, comma separated.
 
-{{< secmeta syntax="SecRulePerfTime USECS" example="SecRulePerfTime 1000" scope="Any" v2="2.7.0" v3="no" >}}
+{{< secmeta syntax="SecRulePerfTime USECS" example="SecRulePerfTime 1000" default="0 (off)" scope="Any" v2="2.7.0" v3="no" >}}
 
 The rules hitting the threshold can be accessed via the collection PERF_RULES.
 
@@ -966,7 +984,7 @@ This directive supports multiple parameters, each of which can be a rule ID or a
 
 Removes the matching rules from the current configuration context.
 
-{{< secmeta syntax="SecRuleRemoveByMsg REGEX" example=`SecRuleRemoveByMsg "FAIL"` scope="Any" v2="2.0.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecRuleRemoveByMsg REGEX [REGEX ...]" example=`SecRuleRemoveByMsg "FAIL"` scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
 Normally, you would use SecRuleRemoveById to remove rules, but that requires the rules to have IDs defined. If they don’t, then you can remove them with SecRuleRemoveByMsg, which matches a regular expression against rule messages.
 
@@ -986,7 +1004,7 @@ This directive must be specified after the rule in which it is disabling. This s
 
 Removes the matching rules from the current configuration context.
 
-{{< secmeta syntax="SecRuleRemoveByTag REGEX" example=`SecRuleRemoveByTag "WEB_ATTACK/XSS"` scope="Any" v2="2.6.0" v3="3.0.0" >}}
+{{< secmeta syntax="SecRuleRemoveByTag REGEX [REGEX ...]" example=`SecRuleRemoveByTag "WEB_ATTACK/XSS"` scope="Any" v2="2.6.0" v3="3.0.0" >}}
 
 Normally, you would use SecRuleRemoveById to remove rules, but that requires the rules to have IDs defined. If they don’t, then you can remove them with SecRuleRemoveByTag, which matches a regular expression against rule tag data. This is useful if you want to disable entire groups of rules based on tag data. Example tags used in the OWASP ModSecurity CRS include:
 
@@ -1024,7 +1042,7 @@ This directive must be specified after the rule in which it is disabling. This s
 
 {{< secmeta syntax="SecRuleScript /path/to/script.lua [ACTIONS]" example=`SecRuleScript "/path/to/file.lua" "block"` scope="Any" v2="2.5.0" v3="3.0.0" >}}
 
-Description: This directive creates a special rule that executes a Lua script to decide whether to match or not. The main difference from SecRule is that there are no targets nor operators. The script can fetch any variable from the ModSecurity context and use any (Lua) operator to test them. The second optional parameter is the list of actions whose meaning is identical to that of SecRule.
+Description: This directive creates a special rule that executes a Lua script to decide whether to match or not. The main difference from SecRule is that there are no targets nor operators. The script can fetch any variable from the ModSecurity context and use any (Lua) operator to test them. The second optional parameter is the list of actions whose meaning is identical to that of SecRule. In ModSecurity v2 a relative script path is resolved against the directory of the configuration file that contains the directive, and a build without Lua support ignores the directive with a startup warning instead of failing.
 
 {{% notice note %}}
 
@@ -1422,9 +1440,11 @@ When set to On, uploaded files are extracted to the upload directory (SecUploadD
 
 ## SecUnicodeMapFile
 
-Defines the path to the file that will be used by the urlDecodeUni transformation function to map Unicode code points during normalization and specifies the Code Point to use.
+Defines the path to the file that will be used by the urlDecodeUni transformation function to map Unicode code points during normalization and specifies the code page to use.
 
-{{< secmeta syntax="SecUnicodeMapFile /path/to/unicode.mapping CODEPOINT" example="SecUnicodeMapFile unicode.mapping 20127" scope="Main" v2="2.6.1" v3="3.0.0" >}}
+In ModSecurity v2 the code page parameter is optional (accepted since 2.7.5; before that it was set with SecUnicodeCodePage), and a relative path is resolved against the directory of the configuration file that contains the directive.
+
+{{< secmeta syntax="SecUnicodeMapFile /path/to/unicode.mapping [CODEPAGE]" example="SecUnicodeMapFile unicode.mapping 20127" scope="Main" v2="2.6.1" v3="3.0.0" >}}
 
 {{% notice note %}}
 
@@ -1436,7 +1456,7 @@ With libModSecurity v3 you may need to place the unicode.mapping file in the sam
 
 Defines which Unicode code point will be used by the urlDecodeUni transformation function during normalization.
 
-{{< secmeta syntax="SecUnicodeCodePage XXXXX" example="SecUnicodeCodePage 20127" scope="Any" v2="2.6.1" v3="no" >}}
+{{< secmeta syntax="SecUnicodeCodePage XXXXX" example="SecUnicodeCodePage 20127" scope="Main" v2="2.6.1" v3="no" >}}
 
 Deprecated in ModSecurity 2.7.5: SecUnicodeMapFile now accepts the code page as its second parameter. libModSecurity v3 does not accept this directive.
 
@@ -1446,15 +1466,15 @@ Configures the directory where intercepted files will be stored.
 
 {{< secmeta syntax="SecUploadDir /path/to/dir" example="SecUploadDir /tmp" scope="Any" v2="2.0.0" v3="3.0.0" >}}
 
-This directory must be on the same filesystem as the temporary directory defined with SecTmpDir. This directive is used with SecUploadKeepFiles.
+This directory must be on the same filesystem as the temporary directory defined with SecTmpDir. This directive is used with SecUploadKeepFiles. In ModSecurity v2 the value `none` unsets the directory (useful in a child configuration context).
 
 ## SecUploadFileLimit
 
 Configures the maximum number of file uploads processed in a multipart POST.
 
-{{< secmeta syntax="SecUploadFileLimit number" example="SecUploadFileLimit 10" default="100 (v2); no limit (v3)" scope="Any" v2="2.5.12" v3="3.0.0" >}}
+{{< secmeta syntax=`SecUploadFileLimit number|"default"` example="SecUploadFileLimit 10" default="100 (v2); no limit (v3)" scope="Any" v2="2.5.12" v3="3.0.0" >}}
 
-In ModSecurity v2 the default is set to 100 files, but you are encouraged to reduce this value. libModSecurity v3 applies no limit unless the directive is set. Any file over the limit will not be extracted and the MULTIPART_FILE_LIMIT_EXCEEDED and MULTIPART_STRICT_ERROR flags will be set. To prevent bypassing any file checks, you must check for one of these flags.
+In ModSecurity v2 the default is set to 100 files, but you are encouraged to reduce this value; the value `default` reverts to it. libModSecurity v3 applies no limit unless the directive is set. Any file over the limit will not be extracted and the MULTIPART_FILE_LIMIT_EXCEEDED and MULTIPART_STRICT_ERROR flags will be set. To prevent bypassing any file checks, you must check for one of these flags.
 
 {{% notice note %}}
 

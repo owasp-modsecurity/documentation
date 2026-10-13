@@ -17,6 +17,7 @@ Both files set `SecRuleEngine DetectionOnly`, enable request and response body a
 | `SecRequestBodyInMemoryLimit 131072` | present | absent: the directive is rejected by v3, which follows the web server's own buffering settings |
 | `SecArgumentsLimit 1000` plus rule 200007 (deny when `&ARGS` reaches the limit) | absent | present |
 | Rule 200003 (multipart strict validation message) | reports `RE %{REQBODY_ERROR}` | reports `PE %{REQBODY_PROCESSOR_ERROR}` |
+| Rule 200003 `DH %{MULTIPART_DUPLICATE_PART_HEADER}` item | present (variable added in 2.9.15) | absent |
 | Rule 200004 (`MULTIPART_UNMATCHED_BOUNDARY`) | `!@eq 0` | `@eq 1` |
 | `SecDataDir /tmp/` | used for the SDBM collection files | accepted but ignored (see [Persistent Storage]({{% relref "3-reference-manual/3-8-persistent-storage" %}})) |
 

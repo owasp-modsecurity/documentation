@@ -14,7 +14,7 @@ Each action belongs to one of five groups:
 {{% /notice %}}
 
 - **Non-disruptive action**s - Do something, but that something does not and cannot affect the rule processing flow. Setting a variable, or changing its value is an example of a non-disruptive action. Non-disruptive action can appear in any rule, including each rule belonging to a chain.
-- **Flow actions** - These actions affect the rule flow (for example skip or skipAfter).
+- **Flow actions** - These actions affect the rule flow (for example chain, skip and skipAfter).
 - **Meta-data actions** - Meta-data actions are used to provide more information about rules. Examples include id, rev, severity and msg.
 - **Data actions** - Not really actions, these are mere containers that hold data used by other actions. For example, the status action holds the status that will be used for blocking (if it takes place).
 
@@ -81,6 +81,8 @@ Example:
 ``` apache
 SecRule RESPONSE_CONTENT_TYPE "^text/html" "nolog,id:99,pass,append:'<hr>Footer'"
 ```
+
+A rule can carry only one append action (a second one replaces the first), and a later matching rule that uses append replaces the text set by an earlier one.
 
 {{% notice warning %}}
 
@@ -221,16 +223,16 @@ The following configuration options are supported. Unless noted otherwise an opt
 4.  **forceRequestBodyVariable** - v2: since 2.5.7. v3: accepted by the parser but has no effect (REQUEST_BODY is always populated in v3).
 5.  **hashEnforcement** - v2: since 2.7.1 (named `EncryptionEnforcement` in 2.7.0). v3: no.
 6.  **hashEngine** - v2: since 2.7.1 (named `EncryptionEngine` in 2.7.0). v3: no.
-7.  **parseXmlIntoArgs** - v2: since 2.9.9. v3: since 3.0.15. Controls XML nodes' parsing into `ARGS`, see [SecParseXmlIntoArgs]({{% relref "3-reference-manual/3-2-configuration-directives#secparsexmlintoargs" %}}).
+7.  **parseXmlIntoArgs** - v2: since 2.9.9 (`On`, `Off` or `OnlyArgs`). v3: since 3.0.15. Controls XML nodes' parsing into `ARGS`, see [SecParseXmlIntoArgs]({{% relref "3-reference-manual/3-2-configuration-directives#secparsexmlintoargs" %}}).
 8.  **requestBodyAccess** - v2: yes. v3: yes.
 9.  **requestBodyLimit** - v2: yes. v3: no.
 10. **requestBodyProcessor** - v2: yes. v3: yes (`XML`, `JSON`, and since 3.0.3 `URLENCODED`).
 11. **responseBodyAccess** - v2: yes. v3: no.
 12. **responseBodyLimit** - v2: yes. v3: no.
 13. **ruleEngine** - v2: yes. v3: yes.
-14. **ruleRemoveById** - v2: since 2.5.0. v3: yes (multiple ranges since 3.0.4). Since this action is triggered at run time, it should be specified **before** the rule which it is disabling.
-15. **ruleRemoveByMsg** - v2: since 2.7.0. v3: no.
-16. **ruleRemoveByTag** - v2: yes. v3: since 3.0.1.
+14. **ruleRemoveById** - v2: since 2.5.0; the value is a rule ID, a range (`1000-1999`) or a comma-separated list of IDs and ranges. v3: yes (multiple ranges since 3.0.4). Since this action is triggered at run time, it should be specified **before** the rule which it is disabling.
+15. **ruleRemoveByMsg** - v2: since 2.7.0; the value is a regular expression matched against the rule message. v3: no.
+16. **ruleRemoveByTag** - v2: since 2.6.0; the value is a regular expression matched against the rule tags. v3: since 3.0.1.
 17. **ruleRemoveTargetById** - v2: since 2.6.7. v3: yes. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
 18. **ruleRemoveTargetByMsg** - v2: since 2.7.0. v3: no. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
 19. **ruleRemoveTargetByTag** - v2: since 2.7.0. v3: yes. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
@@ -421,7 +423,7 @@ This action will log matches to the web server's error log file (the Apache erro
 
 Logs a data fragment as part of the alert message.
 
-{{< secmeta group="Non-disruptive" v2="yes" v3="yes" >}}
+{{< secmeta group="Non-disruptive" v2="2.5.0" v3="yes" >}}
 
 **Example:**
 
@@ -549,6 +551,8 @@ Pauses transaction processing for the specified number of milliseconds. Starting
 SecRule REQUEST_HEADERS:User-Agent "Test" "log,pause:5000,id:125"
 ```
 
+In ModSecurity v2 pause is a disruptive action in its own right: when it is the disruptive action that takes effect, the transaction is paused and then allowed through, exactly like allow. To pause and then block, place pause before the blocking action, for example `pause:5000,deny`. Values that are not a positive integer result in no pause.
+
 {{% notice warning %}}
 
 This feature can be of limited benefit for slowing down brute force authentication attacks, but use with care. If you are under a denial of service attack, the pause feature may make matters worse, as it will cause an entire Apache worker (process or thread, depending on the deployment mode) to sit idle until the pause is completed.
@@ -557,7 +561,7 @@ This feature can be of limited benefit for slowing down brute force authenticati
 
 ## phase
 
-Places the rule or chain into one of five available processing phases. It can also be used in SecDefaultAction to establish the rule defaults for that phase.
+Places the rule or chain into one of five available processing phases. It can also be used in SecDefaultAction to establish the rule defaults for that phase. Internally ModSecurity v2 registers phase with the disruptive action type, which is why it is accepted only in the chain starter; it never intercepts the transaction.
 
 {{< secmeta group="Meta-data" v2="yes" v3="yes" >}}
 
@@ -599,6 +603,8 @@ Prepends the text given as parameter to response body. Content injection must be
 SecRule RESPONSE_CONTENT_TYPE ^text/html \ "phase:3,nolog,pass,id:128,prepend:'Header<br>'"
 ```
 
+A rule can carry only one prepend action (a second one replaces the first), and a later matching rule that uses prepend replaces the text set by an earlier one.
+
 {{% notice warning %}}
 
 Although macro expansion is allowed in the injected content, you are strongly cautioned against inserting user defined data fields into output. Doing so would create a cross-site scripting vulnerability.
@@ -618,7 +624,7 @@ SecRule REQUEST_HEADERS:User-Agent "Test" log,id:129,proxy:http://honeypothost/
 SecRule REQUEST_URI "@streq /test.txt" "phase:1,proxy:'[nocanon]http://$ENV{SERVER_NAME}:$ENV{SERVER_PORT}/test.txt',id:500005"
 ```
 
-For this action to work, mod_proxy must also be installed. This action is useful if you would like to proxy matching requests onto a honeypot web server, and especially in combination with IP address or session tracking.
+For this action to work, mod_proxy must also be installed, and the rule must run in phase 1 or 2; in the output phases, or without mod_proxy, ModSecurity v2 responds with status 500 instead. This action is useful if you would like to proxy matching requests onto a honeypot web server, and especially in combination with IP address or session tracking.
 
 {{% notice note %}}
 
@@ -661,7 +667,7 @@ This action is used in combination with the id action to allow the same rule ID 
 
 ## sanitiseArg
 
-Prevents sensitive request parameter data from being logged to audit log. Each byte of the named parameter(s) is replaced with an asterisk.
+Prevents sensitive request parameter data from being logged to audit log. Each byte of the named parameter(s) is replaced with an asterisk. Since 2.6.0 ModSecurity v2 also accepts the American spelling `sanitizeArg`.
 
 {{< secmeta group="Non-disruptive" v2="yes" v3="no" >}}
 
@@ -680,7 +686,7 @@ The sanitize actions affect only the data as it is logged to audit log. High-lev
 
 ## sanitiseMatched
 
-Prevents the matched variable (request argument, request header, or response header) from being logged to audit log. Each byte of the named parameter(s) is replaced with an asterisk.
+Prevents the matched variable (request argument, request header, or response header) from being logged to audit log. Each byte of the named parameter(s) is replaced with an asterisk. Since 2.6.0 ModSecurity v2 also accepts the American spelling `sanitizeMatched`.
 
 {{< secmeta group="Non-disruptive" v2="yes" v3="no" >}}
 
@@ -698,14 +704,14 @@ The sanitize actions affect only the data as it is logged to audit log. High-lev
 
 ## sanitiseMatchedBytes
 
-Prevents the matched string in a variable from being logged to audit log. Each or a range of bytes of the named parameter(s) is replaced with an asterisk.
+Prevents the matched string in a variable from being logged to audit log. Each or a range of bytes of the named parameter(s) is replaced with an asterisk. ModSecurity v2 also accepts the American spelling `sanitizeMatchedBytes`.
 
 {{< secmeta group="Non-disruptive" v2="2.6.0" v3="no" >}}
 
 **Example:** This action can be used to sanitize arbitrary transaction elements when they match a condition. For example, the example below will sanitize the credit card number.
 
 - sanitiseMatchedBytes -- This would x out only the bytes that matched.
-- sanitiseMatchedBytes:1/4 -- This would x out the bytes that matched, but keep the first byte and last 4 bytes
+- sanitiseMatchedBytes:1/4 -- This would x out the bytes that matched, but keep the first byte and last 4 bytes. Both numbers must be a single digit (0-9); any other parameter is ignored and the whole match is sanitized.
 
 ``` apache
 # Detect credit card numbers in parameters and 
@@ -722,7 +728,7 @@ The sanitize actions affect only the data as it is logged to audit log. High-lev
 
 ## sanitiseRequestHeader
 
-Prevents a named request header from being logged to audit log. Each byte of the named request header is replaced with an asterisk..
+Prevents a named request header from being logged to audit log. Each byte of the named request header is replaced with an asterisk. Since 2.6.0 ModSecurity v2 also accepts the American spelling `sanitizeRequestHeader`.
 
 {{< secmeta group="Non-disruptive" v2="yes" v3="no" >}}
 
@@ -740,7 +746,7 @@ The sanitize actions affect only the data as it is logged to audit log. High-lev
 
 ## sanitiseResponseHeader
 
-Prevents a named response header from being logged to audit log. Each byte of the named response header is replaced with an asterisk.
+Prevents a named response header from being logged to audit log. Each byte of the named response header is replaced with an asterisk. Since 2.6.0 ModSecurity v2 also accepts the American spelling `sanitizeResponseHeader`.
 
 {{< secmeta group="Non-disruptive" v2="yes" v3="no" >}}
 
@@ -779,7 +785,7 @@ Severity values in ModSecurity follows the numeric scale of syslog (where 0 is t
 - **6 - INFO**
 - **7 - DEBUG**
 
-Both ModSecurity v2 and libModSecurity v3 accept either the numerical values or the text values, but you should always specify severity levels using the text values, because it is difficult to remember what a number stands for. The use of the numerical values is deprecated as of version 2.5.0 and may be removed in one of the subsequent major updates.
+Both ModSecurity v2 (text values since 2.7.5, matched case-insensitively) and libModSecurity v3 accept either the numerical values or the text values, but you should always specify severity levels using the text values, because it is difficult to remember what a number stands for.
 
 ## setuid
 
@@ -893,7 +899,7 @@ SecRule REQUEST_FILENAME "@streq test.php" "chain,id:7,phase:1,t:none,nolog"
 
 ## skip
 
-Skips one or more rules (or chains) on successful match.
+Skips one or more rules (or chains) on successful match. Internally ModSecurity v2 registers skip with the disruptive action type (chain starter only, not allowed in SecDefaultAction), although it never intercepts the transaction; a value below 1 is treated as 1.
 
 {{< secmeta group="Flow" v2="yes" v3="yes" >}}
 
@@ -913,7 +919,7 @@ The skip action works only within the current processing phase and not necessari
 
 {{< secmeta group="Flow" v2="2.5.0" v3="yes" >}}
 
-Description: Skips one or more rules (or chains) on a successful match, resuming rule execution with the first rule that follows the rule (or marker created by SecMarker) with the provided ID.
+Description: Skips one or more rules (or chains) on a successful match, resuming rule execution with the first rule that follows the rule (or marker created by SecMarker) with the provided ID. Internally ModSecurity v2 registers skipAfter with the disruptive action type (chain starter only, not allowed in SecDefaultAction), although it never intercepts the transaction.
 
 **Example:** The following rules implement the same logic as the skip example, but using skipAfter:
 
@@ -948,7 +954,7 @@ The skipAfter action works only within the current processing phase and not nece
 
 ## status
 
-Specifies the response status code to use with actions deny and redirect.
+Specifies the response status code to use with actions deny and redirect. ModSecurity v2 registers status as a disruptive-type action (chain starter only) although it only stores the code; the default is 403.
 
 {{< secmeta group="Data" v2="yes" v3="yes" >}}
 
@@ -973,13 +979,13 @@ This action is used to specify the transformation pipeline to use to transform t
 SecRule ARGS "(asfunction|javascript|vbscript|data|mocha|livescript):" "id:146,t:none,t:htmlEntityDecode,t:lowercase,t:removeNulls,t:removeWhitespace"
 ```
 
-Any transformation functions that you specify in a SecRule will be added to the previous ones specified in SecDefaultAction. It is recommended that you always use t:none in your rules, which prevents them depending on the default configuration.
+Any transformation functions that you specify in a SecRule will be added to the previous ones specified in SecDefaultAction. It is recommended that you always use t:none in your rules, which prevents them depending on the default configuration. In ModSecurity v2 `t:-name` removes a previously added transformation from the pipeline; t is the only action that accepts the +/- prefix.
 
 ## tag
 
 Assigns a tag (category) to a rule or a chain.
 
-{{< secmeta group="Meta-data" v2="yes" v3="yes" >}}
+{{< secmeta group="Meta-data" v2="2.1.0" v3="yes" >}}
 
 **Example:**
 
@@ -1007,7 +1013,7 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
 
 ## xmlns
 
-Configures an XML namespace, which will be used in the execution of XPath expressions.
+Configures an XML namespace, which will be used in the execution of XPath expressions. The parameter has the form `prefix=uri`; several xmlns actions may be given on one rule.
 
 {{< secmeta group="Data" v2="yes" v3="yes" >}}
 
