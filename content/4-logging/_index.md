@@ -207,7 +207,7 @@ The metadata fields are always placed at the end of the alert entry. Each metada
 
 ### Escaping
 
-ModSecurity alerts will always contain text fragments that were taken from configuration or the transaction. Such text fragments escaped before they are user in messages, in order to sanitise the potentially dangerous characters. They are also sometimes surrounded using double quotes. The escaping algorithm is as follows:
+ModSecurity alerts will always contain text fragments that were taken from configuration or the transaction. Such text fragments escaped before they are user in messages, in order to sanitize the potentially dangerous characters. They are also sometimes surrounded using double quotes. The escaping algorithm is as follows:
 
 1.  `                       Characters ``0x08`` (``BACKSPACE``),`\
     `                               ``0x0a`` (``NEWLINE``), ``0x10`` (``CARRIAGE RETURN``), ``0x09`` (``HORIZONTAL TAB``) and ``0x0b`` (``VERTICAL TAB``) will be`\
@@ -590,7 +590,7 @@ Response-Body-Transformed: Dechunked
 ##### Sanitised-Args
 
 `                   The ``Sanitised-Args`` header contains a list of arguments`\
-`                       that were sanitised (each byte of their content replaced with an asterisk)`\
+`                       that were sanitized (each byte of their content replaced with an asterisk)`\
 `                       before logging. For example: `\
 `                   `
 
@@ -601,7 +601,7 @@ Sanitised-Args: "old_password", "new_password", "new_password_repeat".
 ##### Sanitised-Request-Headers
 
 `                   The ``Sanitised-Request-Headers`` header contains a list of`\
-`                       request headers that were sanitised before logging. For example: `\
+`                       request headers that were sanitized before logging. For example: `\
 `                   `
 
 ``` apache
@@ -611,7 +611,7 @@ Sanitised-Request-Headers: "Authentication".
 ##### Sanitised-Response-Headers
 
 `                   The ``Sanitised-Response-Headers`` header contains a list`\
-`                       of response headers that were sanitised before logging. For example: `\
+`                       of response headers that were sanitized before logging. For example: `\
 `                   `
 
 ``` apache
@@ -747,7 +747,7 @@ This part is reserved for future use. It is not implemented in ModSecurity 2.x.
 `               The serial audit log format stores multiple audit log entries within the same`\
 `                   file (one after another). This is often very convinent (audit log entries are`\
 `                   easy to find) but this format is only suitable for light logging in the current`\
-`                   ModSecurity implementation because writing to the file is serialised: only one`\
+`                   ModSecurity implementation because writing to the file is serialized: only one`\
 `                   audit log entry can be written at any one time. `
 
 #### Concurrent Audit Log Format

@@ -18,7 +18,7 @@ Where this manual describes behavior that differs between the two, the differenc
 
 ## HTTP Traffic Logging
 
-Web servers are typically well-equipped to log traffic in a form useful for marketing analyses, but fall short logging traffic to web applications. In particular, most are not capable of logging the request bodies, which is where most attack payloads travel. ModSecurity makes full HTTP transaction logging possible, allowing complete requests and responses to be logged. Its logging facilities also allow fine-grained decisions to be made about exactly what is logged and when, ensuring only the relevant data is recorded. As some of the request and/or response may contain sensitive data in certain fields, ModSecurity can be configured to mask these fields before they are written to the audit log.
+Web servers are typically well-equipped to log traffic in a form useful for marketing analysis, but fall short logging traffic to web applications. In particular, most are not capable of logging the request bodies, which is where most attack payloads travel. ModSecurity makes full HTTP transaction logging possible, allowing complete requests and responses to be logged. Its logging facilities also allow fine-grained decisions to be made about exactly what is logged and when, ensuring only the relevant data is recorded. As some of the request and/or response may contain sensitive data in certain fields, ModSecurity can be configured to mask these fields before they are written to the audit log.
 
 ## Real-Time Monitoring and Attack Detection
 
