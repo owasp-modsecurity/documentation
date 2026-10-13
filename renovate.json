@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "customManagers": [
+    {
+      "description": "ModSecurity v2: latest release",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^config/_default/hugo\\.toml$/"
+      ],
+      "matchStrings": [
+        "modsec_v2_latest = \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "owasp-modsecurity/ModSecurity",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>2\\.\\d+\\.\\d+)$"
+    },
+    {
+      "description": "libModSecurity v3: latest release",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^config/_default/hugo\\.toml$/"
+      ],
+      "matchStrings": [
+        "modsec_v3_latest = \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "owasp-modsecurity/ModSecurity",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>3\\.\\d+\\.\\d+)$"
+    },
+    {
+      "description": "ModSecurity-nginx connector: latest release",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^config/_default/hugo\\.toml$/"
+      ],
+      "matchStrings": [
+        "modsec_nginx_latest = \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "owasp-modsecurity/ModSecurity-nginx",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    }
+  ]
+}

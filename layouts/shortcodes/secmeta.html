@@ -1,0 +1,32 @@
+{{- /* Metadata table for a reference-manual entry (directive, variable, action, operator, transformation).
+       Named params: syntax, example, default, scope, group, phases, v2, v3, v3note
+       v2 / v3: "" (unknown), "no", "yes", "tbi" (v3 only: to be implemented) or a version string. */ -}}
+{{- $B := `<span class="badge cstyle %s"><span class="badge-content">%s</span></span>` -}}
+{{- $rows := slice -}}
+{{- with .Get "syntax" }}{{ $rows = $rows | append (dict "k" "Syntax" "code" .) }}{{ end -}}
+{{- with .Get "example" }}{{ $rows = $rows | append (dict "k" "Example" "code" .) }}{{ end -}}
+{{- with .Get "default" }}{{ $rows = $rows | append (dict "k" "Default" "code" .) }}{{ end -}}
+{{- with .Get "scope" }}{{ $rows = $rows | append (dict "k" "Scope" "text" .) }}{{ end -}}
+{{- with .Get "group" }}{{ $rows = $rows | append (dict "k" "Action group" "text" .) }}{{ end -}}
+{{- with .Get "phases" }}{{ $rows = $rows | append (dict "k" "Processing phases" "text" .) }}{{ end -}}
+{{- $v2 := lower (.Get "v2" | default "") -}}
+{{- $v3 := lower (.Get "v3" | default "") -}}
+{{- $v2b := "" -}}
+{{- if eq $v2 "" }}{{ $v2b = printf $B "grey" "unknown" }}
+{{- else if eq $v2 "no" }}{{ $v2b = printf $B "red" "not supported" }}
+{{- else if eq $v2 "yes" }}{{ $v2b = printf $B "green" "supported" }}
+{{- else }}{{ $v2b = printf $B "green" (printf "since %s" $v2) }}{{ end -}}
+{{- $v3b := "" -}}
+{{- if eq $v3 "" }}{{ $v3b = printf $B "grey" "unknown" }}
+{{- else if eq $v3 "no" }}{{ $v3b = printf $B "red" "not supported" }}
+{{- else if eq $v3 "tbi" }}{{ $v3b = printf $B "orange" "not implemented yet" }}
+{{- else if eq $v3 "yes" }}{{ $v3b = printf $B "green" "supported" }}
+{{- else }}{{ $v3b = printf $B "green" (printf "since %s" $v3) }}{{ end -}}
+{{- with .Get "v3note" }}{{ $v3b = printf "%s %s" $v3b (. | $.Page.RenderString) }}{{ end -}}
+<table class="secmeta">
+{{- range $rows }}
+<tr><th>{{ .k }}</th><td>{{ with .code }}<code>{{ . }}</code>{{ else }}{{ .text | $.Page.RenderString }}{{ end }}</td></tr>
+{{- end }}
+<tr><th>ModSecurity v2</th><td>{{ $v2b | safeHTML }}</td></tr>
+<tr><th>libModSecurity v3</th><td>{{ $v3b | safeHTML }}</td></tr>
+</table>

@@ -1,0 +1,49 @@
+baseURL = "https://owasp-modsecurity.github.io/documentation/"
+locale = "en-US"
+title = "ModSecurity Documentation"
+
+[module]
+  proxy = "https://proxy.golang.org"
+  [[module.imports]]
+    path = "github.com/McShelby/hugo-theme-relearn"
+
+[outputs]
+home = ['html', 'rss', 'print']
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[params]
+  editURL = "https://github.com/owasp-modsecurity/documentation/blob/main/content/"
+  author.name = "OWASP ModSecurity project"
+  showVisitedLinks = true
+  logo = { direction = 'column' }
+  linkTitle = ''
+  search.disable = false
+  disableAssetsBusting = false
+  disableInlineCopyToClipBoard = false
+  disableHoverBlockCopyToClipBoard = true
+  disableShortcutsTitle = false
+  disableLanguageSwitchingButton = false
+  disableBreadcrumb = true
+  disableNextPrev = false
+  ordersectionsby = "weight"
+  themeVariant = ["auto", "zen-light", "zen-dark"]
+
+  # ModSecurity related parameters
+  # Kept current by Renovate (see renovate.json); referenced from content with {{< param modsec_v3_latest >}}
+  modsec_v2_latest = "2.9.15"
+  modsec_v3_latest = "3.0.17"
+  modsec_nginx_latest = "1.0.4"
+
+[[menu.shortcuts]]
+name = "<i class='fas fa-bookmark'></i> ModSecurity Home"
+identifier = "home"
+url = "https://modsecurity.org/"
+weight = 10
+
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i> ModSecurity GitHub"
+identifier = "github"
+url = "https://github.com/owasp-modsecurity/ModSecurity"
+weight = 20
