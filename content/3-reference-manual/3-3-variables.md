@@ -53,6 +53,8 @@ Contains the combined size of all request parameters. Files are excluded from th
 
 `SecRule ARGS_COMBINED_SIZE "@gt 2500" "id:12"`
 
+libModSecurity v3 renders the value as a floating-point number (for example 2512.000000), so compare it with numeric operators such as @gt rather than with @eq or a regular expression on the digits.
+
 ## ARGS_GET
 
 {{< secmeta v2="2.5.0" v3="yes" >}}
@@ -93,6 +95,8 @@ This variable holds the authentication method used to validate a user, if any of
 
 `SecRule AUTH_TYPE "Basic" "id:14"`
 
+libModSecurity v3 takes the value from the request itself: the first word of the Authorization request header, if any.
+
 ## DURATION
 
 {{< secmeta v2="2.6.0" v3="yes" >}}
@@ -104,6 +108,8 @@ Contains the time elapsed since the beginning of the current transaction. The un
 {{< secmeta v2="yes" v3="yes" >}}
 
 Collection that provides access to environment variables set by ModSecurity (via the setenv action) or other server modules. Requires a single parameter to specify the name of the desired variable; a regular-expression selector (ENV:/.../) is not accepted.
+
+libModSecurity v3 reads the environment of its own process (plus anything written there by setenv); the name is matched case-sensitively, a bare ENV returns every environment variable, and ENV:/regex/ is accepted by the parser but treated as a literal name.
 
 ``` apache
 # Set environment variable
@@ -203,6 +209,8 @@ Contains a list of temporary files’ names on the disk. Useful when used togeth
 
 `SecRule FILES_TMPNAMES "@inspectFile /path/to/inspect_script.pl" "id:21"`
 
+libModSecurity v3 writes temporary files only when SecUploadKeepFiles or SecTmpSaveUploadedFiles is On (RelevantOnly is rejected there); @inspectFile alone does not create them, so this collection is otherwise empty.
+
 ## FILES_TMP_CONTENT
 
 {{< secmeta v2="2.9.0" v3="yes" >}}
@@ -219,7 +227,7 @@ Available on version 2.9.0-RC1+
 
 {{% notice note %}}
 
-The temporary files only exist when SecUploadKeepFiles is On or RelevantOnly, or when a rule uses @inspectFile; otherwise this collection is empty.
+In ModSecurity v2 the temporary files only exist when SecUploadKeepFiles is On or RelevantOnly, or when a rule uses @inspectFile; otherwise this collection is empty. libModSecurity v3 keeps the file content in memory but only while it is also writing the temporary file, that is when SecUploadKeepFiles or SecTmpSaveUploadedFiles is On; the collection is keyed by the part name (since 3.0.9).
 
 {{% /notice %}}
 
@@ -254,7 +262,7 @@ SecRule REMOTE_ADDR "@geoLookup" "chain,id:22,drop,msg:'Non-GB IP address'"
 SecRule GEO:COUNTRY_CODE "!@streq GB"
 ```
 
-With libModSecurity v3 (MaxMind GeoLite2 database):
+With libModSecurity v3 (MaxMind GeoLite2 database; a build that uses the legacy GeoIP library instead fills the full field list above, while the MaxMind lookup only sets COUNTRY_CODE, COUNTRY_NAME, COUNTRY_CONTINENT, CITY, POSTAL_CODE, LATITUDE and LONGITUDE):
 
 ``` apache
 SecGeoLookupDB /usr/share/GeoIP/GeoLite2-Country.mmdb
@@ -268,6 +276,8 @@ SecRule GEO:COUNTRY_CODE "!@streq GB" ""
 {{< secmeta v2="yes" v3="yes" >}}
 
 Persistent collection shared by all transactions, in the same configuration namespace (see SecWebAppId). It must be initialized with the initcol action before it can be read or written; the collection is stored by SecDataDir (v2) or the persistent storage backend (v3) and the values survive across requests. In ModSecurity v2 a selector is mandatory (GLOBAL:name or GLOBAL:/regex/).
+
+libModSecurity v3 keeps GLOBAL, IP, RESOURCE, SESSION and USER in memory, per process, by default: the data is not shared between worker processes and is lost on restart. A build configured with --with-lmdb stores them in an LMDB database (./modsec-shared-collections in the working directory) instead. SecDataDir is rejected by the v3 parser, SecCollectionTimeout is not supported, and expirevar is the only expiry mechanism.
 
 ``` apache
 SecAction "phase:1,id:91,nolog,pass,initcol:global=global"
@@ -292,7 +302,7 @@ Higher severities have a lower numeric value.
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable will be set to 1 when the request body size is above the setting configured by SecRequestBodyLimit directive. Your policies should always contain a rule to check this variable. Depending on the rate of false positives and your default policy you should decide whether to block or just warn when the rule is triggered.
+This variable will be set to 1 when the request body size is above the setting configured by SecRequestBodyLimit directive. libModSecurity v3 (3.0.7 and later) also sets it, together with REQBODY_ERROR, when a body without files exceeds SecRequestBodyNoFilesLimit. Your policies should always contain a rule to check this variable. Depending on the rate of false positives and your default policy you should decide whether to block or just warn when the rule is triggered.
 
 The best way to use this variable is as in the example below:
 
@@ -302,7 +312,7 @@ The best way to use this variable is as in the example below:
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-Persistent collection keyed by a client address, typically initialized with the initcol action using REMOTE_ADDR. It is commonly used to track per-client state (for example, anomaly scores or request rates) across transactions. In ModSecurity v2 a selector is mandatory (IP:name or IP:/regex/).
+Persistent collection keyed by a client address, typically initialized with the initcol action using REMOTE_ADDR. It is commonly used to track per-client state (for example, anomaly scores or request rates) across transactions. In ModSecurity v2 a selector is mandatory (IP:name or IP:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` apache
 SecAction "phase:1,id:93,nolog,pass,initcol:ip=%{REMOTE_ADDR}"
@@ -377,10 +387,10 @@ SecRule MODSEC_BUILD "!@ge 02050102" "skipAfter:12345,id:29"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
 
-libModSecurity v3 build numbers follow the same scheme (for example 030006100 for 3.0.6):
+libModSecurity v3 build numbers follow the same scheme: two digits each for the major, minor and patch level, followed by the three-digit tag number 100 (for example 030017100 for 3.0.17):
 
 ``` apache
-SecRule MODSEC_BUILD "!@ge 030006100" "skipAfter:12345,id:29"
+SecRule MODSEC_BUILD "!@ge 030017100" "skipAfter:12345,id:29"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
 
@@ -388,7 +398,7 @@ SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 
 {{< secmeta v2="no" v3="3.0.10" >}}
 
-libModSecurity v3 only: set to 1 when the @rx or @rxGlobal operator fails with a PCRE error that is not a match-limit error (for example an invalid pattern after macro expansion). ModSecurity v2 has no equivalent variable.
+libModSecurity v3 only: set to 1 when the @rx or @rxGlobal operator fails with any PCRE error, for example an invalid pattern after macro expansion or a match-limit error (in the latter case MSC_PCRE_LIMITS_EXCEEDED is set as well). ModSecurity v2 has no equivalent variable.
 
 ## MSC_PCRE_LIMITS_EXCEEDED
 
@@ -460,9 +470,11 @@ Collection (keyed by part name) holding the optional language tag given in an RF
 
 ## MULTIPART_FILE_LIMIT_EXCEEDED
 
-{{< secmeta v2="yes" v3="yes" >}}
+{{< secmeta v2="yes" v3="yes" v3note="(accepted by the parser but never populated)" >}}
 
 Flag variable set to 1 when the number of files in a multipart/form-data request exceeded SecUploadFileLimit. One of the flags aggregated by MULTIPART_STRICT_ERROR.
+
+libModSecurity v3 accepts the variable but never assigns it a value: the condition is only visible through MULTIPART_STRICT_ERROR and REQBODY_ERROR, and it is only detected while files are being written to disk (SecUploadKeepFiles or SecTmpSaveUploadedFiles On).
 
 ## MULTIPART_HEADER_FOLDING
 
@@ -693,7 +705,7 @@ Contains the query string part of a request URI. The value in QUERY_STRING is al
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable holds the IP address of the remote client. In ModSecurity v2 on Apache 2.4 with mod_remoteip loaded, it holds the client address as determined by mod_remoteip (see USERAGENT_IP).
+This variable holds the IP address of the remote client. In ModSecurity v2 on Apache 2.4 with mod_remoteip loaded, it holds the client address as determined by mod_remoteip (see USERAGENT_IP). In libModSecurity v3 it is whatever address the connector hands to the library when the connection is processed.
 
 `SecRule REMOTE_ADDR "@ipMatch 192.168.1.101" "id:35"`
 
@@ -763,7 +775,7 @@ It is more common, however, simply to output the content in a log line, as in ru
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-Contains the name of the currently used request body processor. If set, the possible values are URLENCODED, MULTIPART, XML, and JSON; it is an empty string when no processor is in use. ModSecurity v2 selects URLENCODED and MULTIPART automatically from the Content-Type; XML and JSON must be selected with ctl:requestBodyProcessor.
+Contains the name of the currently used request body processor. If set, the possible values are URLENCODED, MULTIPART, XML, and JSON; it is an empty string when no processor is in use. Both engines select URLENCODED and MULTIPART automatically from the Content-Type; XML and JSON must be selected with ctl:requestBodyProcessor.
 
 ``` apache
 SecRule REQBODY_PROCESSOR "^XML$" "chain,id:41"
@@ -805,6 +817,8 @@ Holds the raw request body. This variable is available only if the URLENCODED re
 `SecRule REQUEST_BODY "^username=\w{25,}\&password=\w{25,}\&Submit\=login$" "id:43"`
 
 As of 2.5.7, it is possible to force the presence of the REQUEST_BODY variable, but only when there is no request body processor defined using the ctl:forceRequestBodyVariable option in the REQUEST_HEADERS phase.
+
+libModSecurity v3 always fills REQUEST_BODY with the raw request body (subject to SecRequestBodyAccess and the body limits), whichever processor is in use; ctl:forceRequestBodyVariable is accepted by the parser but ignored.
 
 ## REQUEST_BODY_LENGTH
 
@@ -852,7 +866,7 @@ This variable can be used as either a collection of all of the request headers o
 
 {{% notice note %}}
 
-ModSecurity will treat multiple headers that have identical names in accordance with how the webserver treats them. For Apache this means that they will all be concatenated into a single header with a comma as the deliminator.
+ModSecurity will treat multiple headers that have identical names in accordance with how the webserver treats them. For Apache this means that they will all be concatenated into a single header with a comma as the deliminator. libModSecurity v3 stores every header the connector passes as a separate entry of the collection, so a repeated header name yields several values.
 
 {{% /notice %}}
 
@@ -924,7 +938,7 @@ Please note that anti-evasion transformations are not used on REQUEST_URI_RAW, w
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-Persistent collection keyed by a resource identifier (typically the request path), within the namespace set by SecWebAppId. It is initialized with the setrsc action (ModSecurity 2.7.0 and later) or with initcol, and can be used to keep per-resource state across transactions. In ModSecurity v2 a selector is mandatory (RESOURCE:name or RESOURCE:/regex/).
+Persistent collection keyed by a resource identifier (typically the request path), within the namespace set by SecWebAppId. It is initialized with the setrsc action (ModSecurity 2.7.0 and later) or with initcol, and can be used to keep per-resource state across transactions. In ModSecurity v2 a selector is mandatory (RESOURCE:name or RESOURCE:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` apache
 SecAction "phase:1,id:96,nolog,pass,setrsc:%{REQUEST_FILENAME}"
@@ -945,11 +959,15 @@ This variable holds the data for the response body, but only when response body 
 
 Response body length in bytes. Can be available starting with phase 3, but it does not have to be (as the length of response body is not always known in advance). If the size is not known, this variable will contain a zero. If RESPONSE_CONTENT_LENGTH contains a zero in phase 5 that means the actual size of the response body was 0. The value of this variable can change between phases if the body is modified. For example, in embedded mode, mod_deflate can compress the response body between phases 4 and 5.
 
+libModSecurity v3 sets it only when the response body is processed (phase 4), to the number of buffered body bytes; it does not read the Content-Length response header.
+
 ## RESPONSE_CONTENT_TYPE
 
 {{< secmeta v2="yes" v3="yes" >}}
 
 Response content type. Available only starting with phase 3. The value available in this variable is taken directly from the internal structures of Apache, which means that it may contain the information that is not yet available in response headers. In embedded deployments, you should always refer to this variable, rather than to RESPONSE_HEADERS:Content-Type.
+
+libModSecurity v3 derives it from the Content-Type response header passed by the connector, with the parameters (for example charset=UTF-8) stripped.
 
 ## RESPONSE_HEADERS
 
@@ -994,6 +1012,8 @@ This variable may not work as expected in embedded mode, as Apache sometimes han
 {{< secmeta v2="yes" v3="yes" >}}
 
 This is a special collection that provides access to the id, rev, severity, msg, logdata, ver, maturity, and accuracy fields of the rule that triggered the action. It can be used to refer to only the same rule in which it resides; a field name is mandatory (RULE:id, or %{RULE.id} in macros), and inside a chain the fields are those of the chain starter.
+
+libModSecurity v3 exposes only id, rev, severity, msg and logdata (ver, maturity and accuracy are not available); it also accepts a bare RULE, which returns all five, and a regular-expression selector.
 
 `SecRule &REQUEST_HEADERS:Host "@eq 0" "log,deny,id:59,setvar:tx.varname=%{RULE.id}"`
 
@@ -1139,7 +1159,7 @@ This variable contains the local port that the web server (or reverse proxy) is 
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable is a collection that contains session information. It becomes available only after setsid is executed. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/).
+This variable is a collection that contains session information. It becomes available only after setsid is executed. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 The following example shows how to initialize SESSION using setsid, how to use setvar to increase the SESSION.score values, how to set the SESSION.blocked variable, and finally, how to deny the connection based on the <SESSION:blocked> value:
 
@@ -1173,7 +1193,7 @@ libModSecurity v3 only: the HTTP response status code, the same value as RESPONS
 
 {{< secmeta v2="yes" v3="3.0.3" v3note="accepted as an alias of [STATUS](#status)" >}}
 
-This variable holds the response status line generated by the server, that is the status code followed by the reason phrase (for example 500 Internal Server Error); the protocol version is not included.
+This variable holds the response status line generated by the server, that is the status code followed by the reason phrase (for example 500 Internal Server Error); the protocol version is not included. In libModSecurity v3 it is an alias of STATUS and therefore holds only the status code.
 
 ``` apache
 # Generate an alert when the application generates 500 errors.
@@ -1219,9 +1239,15 @@ You must enable the SecStreamOutBodyInspection directive
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable holds a formatted timestamp. In ModSecurity v2 it is the 14-digit local time YYYYMMDDHHMMSS (for example 20261013183045), not hour:minute:second as older manuals stated. The following rule matches between 18:00 and 23:59:
+This variable holds a formatted timestamp. The format differs between the engines: in ModSecurity v2 it is the 14-digit local time YYYYMMDDHHMMSS (for example 20261013183045), not hour:minute:second as older manuals stated, while libModSecurity v3 produces the local time as HH:MM:SS (for example 18:30:45). The following rules match between 18:00 and 23:59.
+
+ModSecurity v2:
 
 `SecRule TIME "^\d{8}(1[89]|2[0-3])\d{4}$" "id:74"`
+
+libModSecurity v3:
+
+`SecRule TIME "^(1[89]|2[0-3]):" "id:74"`
 
 ## TIME_DAY
 
@@ -1257,7 +1283,7 @@ This variable holds the current minute as two zero-padded digits (00–59). The 
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable holds the current month as two zero-padded digits (01–12). The following rule matches if the month is either November (value 11) or December (value 12):
+This variable holds the current month as two zero-padded digits (01–12). libModSecurity v3 does not zero-pad it (1–12; before 3.0.14 it was zero-based, 0–11). The following rule matches if the month is either November (value 11) or December (value 12):
 
 `SecRule TIME_MON "^1[12]$" "id:78"`
 
@@ -1318,7 +1344,7 @@ Some variable names in the TX collection are reserved and cannot be used:
 
 This variable holds the data created by mod_unique_id [1](http://httpd.apache.org/docs/2.2/mod/mod_unique_id.html). This module provides a magic token for each request which is guaranteed to be unique across "all" requests under very specific conditions. The unique identifier is even unique across multiple machines in a properly configured cluster of machines. The environment variable UNIQUE_ID is set to the identifier for each request. The UNIQUE_ID environment variable is constructed by encoding the 112-bit (32-bit IP address, 32 bit pid, 32 bit time stamp, 16 bit counter) quadruple using the alphabet [A-Za-z0-9@-] in a manner similar to MIME base64 encoding, producing 19 characters.
 
-libModSecurity v3 does not depend on mod_unique_id: it generates an identifier intended to be unique to each transaction, made of a millisecond timestamp, followed by a dot character ('.'), followed by a random number.
+libModSecurity v3 does not depend on mod_unique_id: unless the connector supplies its own transaction identifier, it generates one made of the Unix timestamp in seconds immediately followed by a random floating-point number between 0 and 100 (for example 176020000042.123456). The random part was restored in 3.0.7; the value is not guaranteed to be unique.
 
 ## URLENCODED_ERROR
 
@@ -1330,7 +1356,7 @@ This variable is created when an invalid URL encoding is encountered during the 
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-Persistent collection keyed by the user identifier set with setuid (see USERID). It must be initialized with setuid or initcol before it can be used. In ModSecurity v2 a selector is mandatory (USER:name or USER:/regex/).
+Persistent collection keyed by the user identifier set with setuid (see USERID). It must be initialized with setuid or initcol before it can be used. In ModSecurity v2 a selector is mandatory (USER:name or USER:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` apache
 SecAction "phase:1,id:98,nolog,pass,setuid:%{REMOTE_USER}"
@@ -1372,11 +1398,15 @@ Contains zero or more error messages produced by the web server. This variable i
 
 `SecRule WEBSERVER_ERROR_LOG "File does not exist" "phase:5,id:86,t:none,nolog,pass,setvar:TX.score=+5"`
 
+libModSecurity v3 rejects any rule that uses this variable at configuration load ("Variable VARIABLE_WEBSERVER_ERROR_LOG is not supported by libModSecurity").
+
 ## XML
 
 {{< secmeta v2="yes" v3="yes" >}}
 
 Special collection used to interact with the XML parser. It can be used standalone as a target for the validateDTD and validateSchema operator. Otherwise, it must contain a valid XPath expression, which will then be evaluated against a previously parsed XML DOM tree.
+
+libModSecurity v3 supports it only when built with libxml2; without it the variable parses but never yields a value. XPath selection works the same way (XML:/xpath, with namespaces registered through the xmlns action), and a bare XML yields a placeholder value for the validation operators.
 
 ``` apache
 SecDefaultAction log,deny,status:403,phase:2,id:90

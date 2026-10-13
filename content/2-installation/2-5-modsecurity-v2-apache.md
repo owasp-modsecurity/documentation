@@ -90,6 +90,14 @@ sudo systemctl restart apache2
 
 The package enables the module through `/etc/apache2/mods-available/security2.load` and `security2.conf`. The latter sets `SecDataDir /var/cache/modsecurity` and includes every `*.conf` file in `/etc/modsecurity/`, so that directory is where your `modsecurity.conf` and any local rule files go; `unicode.mapping` is already installed there. The audit log goes to `/var/log/apache2/modsec_audit.log` by default. The shipped `modsecurity.conf-recommended` leaves the engine in `DetectionOnly`; switch `SecRuleEngine` to `On` once you have reviewed the logs.
 
+### Current builds from the digitalwave repository
+
+For Debian 11 to 13 and Ubuntu 22.04 to 26.04, the [digitalwave repository](https://modsecurity.digitalwave.hu/)
+maintained by a ModSecurity project leader provides `libapache2-mod-security2` built from the current
+`v2/master` branch (2.9.16 pre-release as of October 2026) together with the latest `modsecurity-crs`. It is the
+same package as the distribution's, so the configuration layout above applies unchanged. Repository setup is
+described under [Distribution packages for libModSecurity v3]({{% relref "2-4-distribution-recipes#the-digitalwave-repository" %}}).
+
 ### RHEL, AlmaLinux, Rocky Linux, CentOS Stream
 
 The module comes from EPEL (Extra Packages for Enterprise Linux):

@@ -5,7 +5,7 @@ weight: 6
 
 This section documents the operators currently available in ModSecurity.
 
-ModSecurity v2 looks operator names up case-insensitively (`@ipmatch`, `@ipMatch` and `@IPMATCH` all resolve to the same operator); the spellings below are the documented ones.
+ModSecurity v2 and libModSecurity v3 both look operator names up case-insensitively (`@ipmatch`, `@ipMatch` and `@IPMATCH` all resolve to the same operator); the spellings below are the documented ones.
 
 ## beginsWith
 
@@ -54,7 +54,7 @@ Your site has a wide **select**ion of computers.
 
 ## detectSQLi
 
-Returns true if SQL injection payload is found. This operator uses LibInjection to detect SQLi attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13.
+Returns true if SQL injection payload is found. This operator uses LibInjection to detect SQLi attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13. libModSecurity v3 bundles libinjection 4 (updated to v4.0.0 in 3.0.15); since 3.0.15 a libinjection parser error counts as a match, and with `capture` the libinjection fingerprint is stored in TX:0.
 
 {{< secmeta v2="2.7.4" v3="yes" >}}
 
@@ -73,7 +73,7 @@ This operator supports the "capture" action.
 
 ## detectXSS
 
-Returns true if XSS injection is found. This operator uses LibInjection to detect XSS attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13.
+Returns true if XSS injection is found. This operator uses LibInjection to detect XSS attacks. ModSecurity v2 bundles libinjection 4 since 2.9.13. libModSecurity v3 bundles libinjection 4 (updated to v4.0.0 in 3.0.15); since 3.0.15 a libinjection parser error counts as a match, and with `capture` the matched input is stored in TX:0.
 
 {{< secmeta v2="2.8.0" v3="yes" >}}
 
@@ -128,7 +128,7 @@ The fuzzyHash operator uses the ssdeep, which is a program for computing context
 
 {{< secmeta v2="2.9.0" v3="yes" >}}
 
-The operator takes two parameters: the path of a file containing one ssdeep hash per line (a relative path is resolved against the directory of the configuration file) and a similarity threshold between 1 and 100; the operator matches when any hash scores at least the threshold. ModSecurity v2 must be built with ssdeep support, otherwise the operator fails at run time.
+The operator takes two parameters: the path of a file containing one ssdeep hash per line (a relative path is resolved against the directory of the configuration file) and a similarity threshold between 1 and 100; the operator matches when any hash scores at least the threshold. ModSecurity v2 must be built with ssdeep support, otherwise the operator fails at run time. libModSecurity v3 must be built with ssdeep support, otherwise the rule is rejected at configuration load; v3 does not check that the threshold lies between 1 and 100 and does not skip comment lines in the hash file.
 
 For further information on ssdeep, visit its site: <http://ssdeep.sourceforge.net/>
 
@@ -159,7 +159,7 @@ If a value is provided that cannot be converted to an integer (i.e a string) thi
 
 ## geoLookup
 
-Performs a geolocation lookup using the IP address in input against the geolocation database previously configured using SecGeoLookupDb. If the lookup is successful, the obtained information is captured in the GEO collection. ModSecurity v2 reads the legacy MaxMind GeoIP binary format (GeoIP/GeoLiteCity `.dat`) with its own parser. libModSecurity v3 reads the MaxMind DB format (GeoIP2/GeoLite2 `.mmdb`) through libmaxminddb (since 3.0.1), or the legacy `.dat` format through libGeoIP, depending on which library it was built with.
+Performs a geolocation lookup using the IP address in input against the geolocation database previously configured using SecGeoLookupDb. If the lookup is successful, the obtained information is captured in the GEO collection. ModSecurity v2 reads the legacy MaxMind GeoIP binary format (GeoIP/GeoLiteCity `.dat`) with its own parser. libModSecurity v3 reads the MaxMind DB format (GeoIP2/GeoLite2 `.mmdb`) through libmaxminddb (since 3.0.1), or the legacy `.dat` format through libGeoIP, depending on which library it was built with. With libmaxminddb v3 fills GEO:COUNTRY_CODE, COUNTRY_NAME, COUNTRY_CONTINENT (the continent name), CITY, POSTAL_CODE, LATITUDE and LONGITUDE; COUNTRY_CODE3, REGION, DMA_CODE and AREA_CODE are only filled by the libGeoIP build. A v3 build with neither library rejects any rule using @geoLookup at configuration load, and a lookup without a configured database does not match.
 
 {{< secmeta v2="2.5.0" v3="yes" >}}
 
@@ -221,13 +221,13 @@ If a value is provided that cannot be converted to an integer (i.e a string) thi
 
 ## inspectFile
 
-Executes an external program for every variable in the target list. The contents of the variable is provided to the script as the first parameter on the command line. The program must be specified as the first parameter to the operator. As of version 2.5.0, if the supplied program filename is not absolute, it is treated as relative to the directory in which the configuration file resides. Also as of version 2.5.0, if the filename is determined to be a Lua script (based on its .lua extension), the script will be processed by the internal Lua engine. Internally processed scripts will often run faster (there is no process creation overhead) and have full access to the transaction context of ModSecurity. libModSecurity v3 behaves the same way: relative paths are resolved against the configuration file directory and `.lua` scripts are run by the built-in Lua engine (since 3.0.4 the Lua script receives the `FILES_TMPNAMES` value as its argument, as in v2).
+Executes an external program for every variable in the target list. The contents of the variable is provided to the script as the first parameter on the command line. The program must be specified as the first parameter to the operator. As of version 2.5.0, if the supplied program filename is not absolute, it is treated as relative to the directory in which the configuration file resides. Also as of version 2.5.0, if the filename is determined to be a Lua script (based on its .lua extension), the script will be processed by the internal Lua engine. Internally processed scripts will often run faster (there is no process creation overhead) and have full access to the transaction context of ModSecurity. libModSecurity v3 behaves the same way: a relative path is tried against the current working directory and then the configuration file directory, and `.lua` scripts are run by the built-in Lua engine when v3 was built with Lua support (since 3.0.4 the Lua script receives the `FILES_TMPNAMES` value as its argument, as in v2); without Lua support a `.lua` file is executed as an external program.
 
 {{< secmeta v2="yes" v3="yes" >}}
 
 The @inspectFile operator was initially designed for file inspection (hence the name), but it can also be used in any situation that requires decision making using external logic.
 
-An external program must print one line: output starting with `1` means the file is accepted (no match), anything else is treated as a rejection and the operator matches (the output is logged as the reason). A Lua script matches when its `main` function returns a string and does not match when it returns `nil`.
+An external program must print one line: output starting with `1` means the file is accepted (no match), anything else is treated as a rejection and the operator matches (the output is logged as the reason). A Lua script matches when its `main` function returns a string and does not match when it returns `nil`. In libModSecurity v3 the program must exit with status 0 and print at least two characters for a match to be possible, the output is not logged, and a Lua script matches only when `main` returns a non-empty string.
 
 The OWASP ModSecurity Core Rule Set (CRS) includes a utility script in the /util directory called runav.pl ([util/av-scanning/runav.pl](https://github.com/coreruleset/coreruleset/blob/v3.3/master/util/av-scanning/runav.pl) in CRS 3.3; CRS 4 no longer ships it) that allows the file approval mechanism to integrate with the ClamAV virus scanner. This is especially handy to prevent viruses and exploits from entering the web server through file upload.
 
@@ -305,7 +305,7 @@ end
 
 {{% notice note %}}
 
-Starting in version 2.9 ModSecurity will not fill the FILES_TMPNAMES variable unless SecTmpSaveUploadedFiles directive is On, or the SecUploadKeepFiles directive is set to RelevantOnly. libModSecurity v3 fills FILES_TMPNAMES when SecTmpSaveUploadedFiles is On, or SecUploadKeepFiles is set to RelevantOnly or On.
+Starting in version 2.9 ModSecurity will not fill the FILES_TMPNAMES variable unless SecTmpSaveUploadedFiles directive is On, or the SecUploadKeepFiles directive is set to RelevantOnly. libModSecurity v3 fills FILES_TMPNAMES when SecTmpSaveUploadedFiles or SecUploadKeepFiles is On (the v3 parser rejects SecUploadKeepFiles RelevantOnly).
 
 {{% /notice %}}
 
@@ -377,19 +377,19 @@ The file ips.txt may contain:
 
 {{% notice note %}}
 
-As of v2.9.0-RC1 this operator also supports to load content served by an HTTPS server (`https://` URL instead of a path). libModSecurity v3 supports this in all releases.
+As of v2.9.0-RC1 this operator also supports to load content served by an HTTPS server (`https://` URL instead of a path). libModSecurity v3 supports this in all releases when built with libcurl.
 
 {{% /notice %}}
 
 {{% notice note %}}
 
-When used with content served by a HTTPS server, the directive SecRemoteRulesFailAction can be used to configure a warning instead of an abort, when the remote content could not be retrieved.
+When used with content served by a HTTPS server, the directive SecRemoteRulesFailAction can be used to configure a warning instead of an abort, when the remote content could not be retrieved. This applies to ModSecurity v2 only: in libModSecurity v3 a failed download rejects the rule at configuration load regardless of SecRemoteRulesFailAction.
 
 {{% /notice %}}
 
 {{% notice note %}}
 
-Empty lines are ignored. Comment lines (beginning with the # character) are ignored by ModSecurity v2 and by libModSecurity v3 since 3.0.9.
+Empty lines are ignored. Comment lines (beginning with the # character) are ignored by ModSecurity v2 and by libModSecurity v3 since 3.0.9; v3 also strips a trailing `#` comment from a line, and tries a relative file name against the current working directory before the directory of the rules file.
 
 {{% /notice %}}
 
@@ -536,6 +536,12 @@ As of v2.9.0-RC1 this operator also supports to load content served by an HTTPS 
 
 {{% /notice %}}
 
+{{% notice note %}}
+
+libModSecurity v3 differences: phrases are read verbatim (no whitespace trimming, so a CRLF file leaves a trailing carriage return in every phrase), the `|hex|` notation is not interpreted inside phrase files, a relative file name is tried against the current working directory before the rules file directory, every argument may be an `https://` URL (libcurl build), and a file or URL that cannot be read rejects the rule at configuration load regardless of SecRemoteRulesFailAction. Empty lines and `#` comment lines are skipped since 3.0.4.
+
+{{% /notice %}}
+
 ## rbl
 
 Looks up the input value in the RBL (real-time block list) given as parameter. The input value can be an IPv4 address or a hostname; IPv6 addresses are not supported.
@@ -557,7 +563,7 @@ If the RBL used is dnsbl.httpbl.org (Honeypot Project RBL) then the SecHttpBlKey
 
 {{% notice note %}}
 
-If the RBL used is either multi.uribl.com or zen.spamhaus.org combined RBLs, it is possible to also parse the return codes in the last octet of the DNS response to identify which specific RBL the IP was found in.
+If the RBL used is either multi.uribl.com or zen.spamhaus.org combined RBLs, it is possible to also parse the return codes in the last octet of the DNS response to identify which specific RBL the IP was found in. libModSecurity v3 recognizes the provider by the substrings `httpbl.org`, `uribl.com` and `spamhaus.org` in the parameter and writes the decoded reason to the debug log only.
 
 {{% /notice %}}
 
@@ -619,13 +625,13 @@ Macro expansion is supported since ModSecurity 2.6.2: a pattern containing `%{..
 
 {{% notice note %}}
 
-libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions.
+libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions. In v3 a pattern that is invalid at load time rejects the rule, a pattern that becomes invalid after macro expansion does not match and sets MSC_PCRE_ERROR, and an empty pattern matches everything. SecPcreMatchLimit is honored since 3.0.10: when the limit is exceeded the operator does not match and MSC_PCRE_LIMITS_EXCEEDED and TX:MSC_PCRE_LIMITS_EXCEEDED are set to 1.
 
 {{% /notice %}}
 
 {{% notice note %}}
 
-This operator supports the "capture" action. ModSecurity v2 stores the whole match in TX:0 and up to nine subexpressions in TX:1 to TX:9; further subexpressions are not captured.
+This operator supports the "capture" action. ModSecurity v2 stores the whole match in TX:0 and up to nine subexpressions in TX:1 to TX:9; further subexpressions are not captured. libModSecurity v3 stores every subexpression of the pattern.
 
 {{% /notice %}}
 
@@ -712,7 +718,7 @@ SecRule ARGS "@validateByteRange 1-255" "id:179"
 
 {{% notice note %}}
 
-You can force requests to consist only of bytes from a certain byte range. This can be useful to avoid stack overflow attacks (since they usually contain "random" binary content). The parameter is mandatory: a comma-separated list of byte values and `start-end` ranges, each between 0 and 255; whitespace around the values is tolerated by `atoi()` and anything not listed is reported as outside the range.
+You can force requests to consist only of bytes from a certain byte range. This can be useful to avoid stack overflow attacks (since they usually contain "random" binary content). The parameter is mandatory: a comma-separated list of byte values and `start-end` ranges, each between 0 and 255; whitespace around the values is tolerated by `atoi()` and anything not listed is reported as outside the range. libModSecurity v3 (since 3.0.14) rejects the rule at configuration load when a value is outside 0 to 255 or a range start is greater than its end.
 
 {{% /notice %}}
 
@@ -724,7 +730,7 @@ validateByteRange is similar to the ModSecurity 1.X SecFilterForceByteRange Dire
 
 ## validateDTD
 
-Validates the XML DOM tree against the supplied DTD. The DOM tree must have been built previously using the XML request body processor. This operator matches when the validation fails.
+Validates the XML DOM tree against the supplied DTD. The DOM tree must have been built previously using the XML request body processor. This operator matches when the validation fails. libModSecurity v3 requires a build with libxml2 (otherwise the operator is accepted but always matches), resolves the DTD path at configuration load, and also matches when no XML tree was built or the document is not well formed.
 
 {{< secmeta v2="yes" v3="yes" >}}
 
@@ -755,7 +761,7 @@ SecRule REQUEST_URI "@validatehash "product_info|product_list" "phase:1,deny,id:
 
 ## validateSchema
 
-Validates the XML DOM tree against the supplied XML Schema. The DOM tree must have been built previously using the XML request body processor. This operator matches when the validation fails.
+Validates the XML DOM tree against the supplied XML Schema. The DOM tree must have been built previously using the XML request body processor. This operator matches when the validation fails. libModSecurity v3 requires a build with libxml2 (otherwise the operator is accepted but always matches), resolves the schema path at configuration load, and also matches when no XML tree was built or the document is not well formed.
 
 {{< secmeta v2="yes" v3="yes" >}}
 

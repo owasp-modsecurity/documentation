@@ -20,7 +20,7 @@ Each action belongs to one of five groups:
 
 ## accuracy
 
-Specifies the relative accuracy level of the rule related to false positives/negatives. The value is a string based on a numeric scale (1-9 where 9 is very strong and 1 has many false positives).
+Specifies the relative accuracy level of the rule related to false positives/negatives. The value is a string based on a numeric scale (1-9 where 9 is very strong and 1 has many false positives). libModSecurity v3 rejects a non-numeric value.
 
 {{< secmeta group="Meta-data" v2="2.7" v3="yes" >}}
 
@@ -82,7 +82,7 @@ Example:
 SecRule RESPONSE_CONTENT_TYPE "^text/html" "nolog,id:99,pass,append:'<hr>Footer'"
 ```
 
-A rule can carry only one append action (a second one replaces the first), and a later matching rule that uses append replaces the text set by an earlier one.
+A rule can carry only one append action (a second one replaces the first), and a later matching rule that uses append replaces the text set by an earlier one. libModSecurity v3 refuses the rule at configuration load (`Action: Append is not yet supported.`).
 
 {{% notice warning %}}
 
@@ -146,6 +146,8 @@ SecRule ARGS attack1 phase:2,id:1,deny
 SecRuleUpdateActionById 1 block
 ```
 
+libModSecurity v3 runs the disruptive action of the SecDefaultAction defined for the rule's phase; if there is none for that phase, block does nothing. v3 requires SecDefaultAction to name a real disruptive action (`block` is not accepted there) and allows it only once per phase.
+
 ## capture
 
 When used together with the regular expression operator (@rx), the capture action will create copies of the regular expression captures and place them into the transaction variable collection.
@@ -162,7 +164,7 @@ SecRule REQUEST_BODY "^username=(\w{25,})" phase:2,capture,t:none,chain,id:105
 The TX.0 variable always contains the entire area that the regular expression matched. All the other variables contain the captured values, in the order in which the capturing parentheses appear in the regular expression.
 
 - **ModSecurity v2**: up to 10 captures are copied on a successful pattern match, each with a name consisting of a digit from 0 to 9.
-- **libModSecurity v3**: every capturing group of the match is copied (TX.0, TX.1, TX.2, ...); there is no fixed limit of ten.
+- **libModSecurity v3**: every capturing group of the match is copied (TX.0, TX.1, TX.2, ...); there is no fixed limit of ten. Besides @rx, v3 honors capture for @rxGlobal, @pm, @detectSQLi, @detectXSS, @rbl, @verifyCC, @verifyCPF, @verifySSN and @verifySVNR.
 
 ## chain
 
@@ -195,7 +197,7 @@ The following directives can be used in rule chains:
 Special rules control the usage of actions in chained rules:
 
 - Any actions that affect the rule flow (i.e., the disruptive actions, skip and skipAfter) can be used only in the chain starter. They will be executed only if the entire chain matches.
-- Non-disruptive actions can be used in any rule; they will be executed if the rule that contains them matches and not only when the entire chain matches.
+- Non-disruptive actions can be used in any rule; they will be executed if the rule that contains them matches and not only when the entire chain matches. In libModSecurity v3 this is true only for setvar: every other non-disruptive action in a chained rule (ctl, setenv, exec, log, ...) runs only once the whole chain has matched.
 - The metadata actions (e.g., id, rev, msg) can be used only in the chain starter.
 
 ## ctl
@@ -218,7 +220,7 @@ SecRule REQUEST_URI "@beginsWith /index.php" "phase:1,t:none,pass, \
 The following configuration options are supported. Unless noted otherwise an option is available in both ModSecurity v2 and libModSecurity v3:
 
 1.  **auditEngine** - v2: yes. v3: since 3.0.7.
-2.  **auditLogParts** - v2: yes. v3: yes.
+2.  **auditLogParts** - v2: yes. v3: yes, but only the `+`/`-` forms (`+E`, `-E`); an absolute part list is a parse error.
 3.  **debugLogLevel** - v2: yes. v3: no.
 4.  **forceRequestBodyVariable** - v2: since 2.5.7. v3: accepted by the parser but has no effect (REQUEST_BODY is always populated in v3).
 5.  **hashEnforcement** - v2: since 2.7.1 (named `EncryptionEnforcement` in 2.7.0). v3: no.
@@ -230,14 +232,14 @@ The following configuration options are supported. Unless noted otherwise an opt
 11. **responseBodyAccess** - v2: yes. v3: no.
 12. **responseBodyLimit** - v2: yes. v3: no.
 13. **ruleEngine** - v2: yes. v3: yes.
-14. **ruleRemoveById** - v2: since 2.5.0; the value is a rule ID, a range (`1000-1999`) or a comma-separated list of IDs and ranges. v3: yes (multiple ranges since 3.0.4). Since this action is triggered at run time, it should be specified **before** the rule which it is disabling.
+14. **ruleRemoveById** - v2: since 2.5.0; the value is a rule ID, a range (`1000-1999`) or a comma-separated list of IDs and ranges. v3: yes, but one ID or one range per action (no list); repeat the action to remove several (since 3.0.4). Since this action is triggered at run time, it should be specified **before** the rule which it is disabling.
 15. **ruleRemoveByMsg** - v2: since 2.7.0; the value is a regular expression matched against the rule message. v3: no.
-16. **ruleRemoveByTag** - v2: since 2.6.0; the value is a regular expression matched against the rule tags. v3: since 3.0.1.
-17. **ruleRemoveTargetById** - v2: since 2.6.7. v3: yes. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
+16. **ruleRemoveByTag** - v2: since 2.6.0; the value is a regular expression matched against the rule tags. v3: since 3.0.1, compared literally against each tag (not a regular expression).
+17. **ruleRemoveTargetById** - v2: since 2.6.7. v3: yes, with the target compared literally against the variable name (`ARGS:user`; no regular-expression targets). Since this action is used to just remove targets, users don't need to use the char ! before the target list.
 18. **ruleRemoveTargetByMsg** - v2: since 2.7.0. v3: no. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
-19. **ruleRemoveTargetByTag** - v2: since 2.7.0. v3: yes. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
+19. **ruleRemoveTargetByTag** - v2: since 2.7.0. v3: yes, with both the tag and the target compared literally. Since this action is used to just remove targets, users don't need to use the char ! before the target list.
 
-`ctl:forceResponseBodyVariable` and `ctl:responseBodyProcessor` exist only in Coraza; neither ModSecurity v2 nor libModSecurity v3 accepts them.
+`ctl:forceResponseBodyVariable` and `ctl:responseBodyProcessor` exist only in Coraza; neither ModSecurity v2 nor libModSecurity v3 accepts them. libModSecurity v3 recognizes only the options marked "v3: yes" above; any other `ctl` option (for example `ctl:responseBodyAccess=Off`) is a parse error that rejects the configuration.
 
 With the exception of the requestBodyProcessor and forceRequestBodyVariable settings, each configuration option corresponds to one configuration directive and the usage is identical.
 
@@ -271,7 +273,7 @@ Example: The following example will decrement the counter by 60 every 300 second
 SecAction phase:5,id:108,nolog,pass,deprecatevar:SESSION.score=60/300
 ```
 
-Counter values are always positive, meaning that the value will never go below zero. Unlike expirevar, the deprecate action must be executed on every request.
+Counter values are always positive, meaning that the value will never go below zero. Unlike expirevar, the deprecate action must be executed on every request. libModSecurity v3 refuses the rule at configuration load (`Action: DeprecateVar is not yet supported.`).
 
 ## drop
 
@@ -315,7 +317,7 @@ SecRule ARGS:p attack "phase:2,id:113,block,exec:/usr/local/apache/conf/exec.lua
 
 The exec action is executed independently from any disruptive actions specified. External scripts will always be called with no parameters. Some transaction information will be placed in environment variables. All the usual CGI environment variables will be there. You should be aware that forking a threaded process results in all threads being replicated in the new process. Forking can therefore incur larger overhead in a multithreaded deployment. The script you execute must write something (anything) to stdout; if it doesn’t, ModSecurity will assume that the script failed, and will record the failure.
 
-libModSecurity v3 only supports Lua scripts (detected by the .lua extension); it does not fork external binaries.
+libModSecurity v3 only supports Lua scripts (detected by the .lua extension); it does not fork external binaries. The library must be built with Lua support (`--with-lua`, detected automatically by configure), and the script is loaded when the configuration is parsed, so a missing or non-Lua script is a configuration error.
 
 ## expirevar
 
@@ -336,7 +338,7 @@ libModSecurity v3 supports expirevar since 3.0.11, for the `ip`, `global`, `reso
 
 ## id
 
-Assigns a unique, numeric ID to the rule or chain in which it appears. Starting with ModSecurity 2.7 this action is mandatory; libModSecurity v3 rejects any SecRule or SecAction without an id.
+Assigns a unique, numeric ID to the rule or chain in which it appears. Starting with ModSecurity 2.7 this action is mandatory; libModSecurity v3 rejects any SecRule or SecAction without an id, and also rejects a rule whose id is already in use.
 
 {{< secmeta group="Meta-data" v2="yes" v3="yes" >}}
 
@@ -403,6 +405,8 @@ SecAction phase:1,id:116,nolog,pass,initcol:ip=%{REMOTE_ADDR}
 
 Collections are loaded into memory on-demand, when the initcol action is executed. A collection will be persisted only if a change was made to it in the course of transaction processing.
 
+libModSecurity v3 accepts only `ip`, `global` and `resource` as the collection name (SESSION and USER are initialized with setsid and setuid); any other name is a configuration error.
+
 See the "Persistent Storage" section for further details.
 
 ## log
@@ -443,7 +447,7 @@ In ModSecurity v2, `SecMarker LABEL` is expanded into the rule `SecRule REMOTE_A
 
 ## maturity
 
-Specifies the relative maturity level of the rule related to the length of time a rule has been public and the amount of testing it has received. The value is a string based on a numeric scale (1-9 where 9 is extensively tested and 1 is a brand new experimental rule).
+Specifies the relative maturity level of the rule related to the length of time a rule has been public and the amount of testing it has received. The value is a string based on a numeric scale (1-9 where 9 is extensively tested and 1 is a brand new experimental rule). libModSecurity v3 rejects a non-numeric value.
 
 {{< secmeta group="Meta-data" v2="2.7" v3="yes" >}}
 
@@ -551,7 +555,7 @@ Pauses transaction processing for the specified number of milliseconds. Starting
 SecRule REQUEST_HEADERS:User-Agent "Test" "log,pause:5000,id:125"
 ```
 
-In ModSecurity v2 pause is a disruptive action in its own right: when it is the disruptive action that takes effect, the transaction is paused and then allowed through, exactly like allow. To pause and then block, place pause before the blocking action, for example `pause:5000,deny`. Values that are not a positive integer result in no pause.
+In ModSecurity v2 pause is a disruptive action in its own right: when it is the disruptive action that takes effect, the transaction is paused and then allowed through, exactly like allow. To pause and then block, place pause before the blocking action, for example `pause:5000,deny`. Values that are not a positive integer result in no pause. libModSecurity v3 refuses the rule at configuration load (`Action: Pause is not yet supported.`).
 
 {{% notice warning %}}
 
@@ -571,6 +575,8 @@ Places the rule or chain into one of five available processing phases. It can al
 # Initialize IP address tracking in phase 1
 SecAction phase:1,nolog,pass,id:126,initcol:IP=%{REMOTE_ADDR}
 ```
+
+libModSecurity v3 additionally accepts `phase:0`, a connection phase run when the connector calls `processConnection()`, before any request data has been read; only REMOTE_ADDR, REMOTE_HOST, REMOTE_PORT, SERVER_ADDR, SERVER_PORT and UNIQUE_ID are populated there.
 
 Starting in ModSecurity version v2.7 (and in all libModSecurity v3 releases) there are aliases for three of the five phase numbers:
 
@@ -603,7 +609,7 @@ Prepends the text given as parameter to response body. Content injection must be
 SecRule RESPONSE_CONTENT_TYPE ^text/html \ "phase:3,nolog,pass,id:128,prepend:'Header<br>'"
 ```
 
-A rule can carry only one prepend action (a second one replaces the first), and a later matching rule that uses prepend replaces the text set by an earlier one.
+A rule can carry only one prepend action (a second one replaces the first), and a later matching rule that uses prepend replaces the text set by an earlier one. libModSecurity v3 refuses the rule at configuration load (`Action: Prepend is not yet supported.`).
 
 {{% notice warning %}}
 
@@ -624,7 +630,7 @@ SecRule REQUEST_HEADERS:User-Agent "Test" log,id:129,proxy:http://honeypothost/
 SecRule REQUEST_URI "@streq /test.txt" "phase:1,proxy:'[nocanon]http://$ENV{SERVER_NAME}:$ENV{SERVER_PORT}/test.txt',id:500005"
 ```
 
-For this action to work, mod_proxy must also be installed, and the rule must run in phase 1 or 2; in the output phases, or without mod_proxy, ModSecurity v2 responds with status 500 instead. This action is useful if you would like to proxy matching requests onto a honeypot web server, and especially in combination with IP address or session tracking.
+For this action to work, mod_proxy must also be installed, and the rule must run in phase 1 or 2; in the output phases, or without mod_proxy, ModSecurity v2 responds with status 500 instead. This action is useful if you would like to proxy matching requests onto a honeypot web server, and especially in combination with IP address or session tracking. libModSecurity v3 refuses the rule at configuration load (`Action: Proxy is not yet supported.`).
 
 {{% notice note %}}
 
@@ -644,7 +650,7 @@ Intercepts transaction by issuing an external (client-visible) redirection to th
 SecRule REQUEST_HEADERS:User-Agent "Test" "phase:1,id:130,log,redirect:http://www.example.com/failed.html"
 ```
 
-If the status action is present on the same rule, and its value can be used for a redirection (i.e., is one of the following: 301, 302, 303, or 307), the value will be used for the redirection status code. Otherwise, status code 302 will be used.
+If the status action is present on the same rule, and its value can be used for a redirection (i.e., is one of the following: 301, 302, 303, or 307), the value will be used for the redirection status code. Otherwise, status code 302 will be used. libModSecurity v3 (since 3.0.3) keeps any status in the 301-307 range and macro-expands the location.
 
 ## rev
 
@@ -678,6 +684,8 @@ Prevents sensitive request parameter data from being logged to audit log. Each b
 SecAction "nolog,phase:2,id:131,sanitiseArg:password,sanitiseArg:newPassword,sanitiseArg:oldPassword"
 ```
 
+libModSecurity v3 refuses the rule at configuration load (`Action: SanitiseArg is not yet supported.`).
+
 {{% notice note %}}
 
 The sanitize actions affect only the data as it is logged to audit log. High-level debug logs may contain sensitive data. Apache access log may contain sensitive data placed in the request URI.
@@ -695,6 +703,8 @@ Prevents the matched variable (request argument, request header, or response hea
 ``` apache
 SecRule ARGS_NAMES password nolog,pass,id:132,sanitiseMatched
 ```
+
+libModSecurity v3 refuses the rule at configuration load (`Action: SanitiseMatched is not yet supported.`).
 
 {{% notice note %}}
 
@@ -720,6 +730,8 @@ SecRule ARGS "@verifyCC \d{13,16}" "phase:2,id:133,nolog,capture,pass,msg:'Poten
 SecRule RESPONSE_BODY "@verifyCC \d{13,16}" "phase:4,id:134,t:none,log,capture,block,msg:'Potential credit card number is response body',sanitiseMatchedBytes:0/4"
 ```
 
+libModSecurity v3 refuses the rule at configuration load (`Action: SanitiseMatchedBytes is not yet supported.`).
+
 {{% notice note %}}
 
 The sanitize actions affect only the data as it is logged to audit log. High-level debug logs may contain sensitive data. Apache access log may contain sensitive data placed in the request URI. You must use capture action with sanitiseMatchedBytes, so the operator must support capture action. ie: @rx, @verifyCC.
@@ -738,6 +750,8 @@ Prevents a named request header from being logged to audit log. Each byte of the
 SecAction "phase:1,nolog,pass,id:135,sanitiseRequestHeader:Authorization"
 ```
 
+libModSecurity v3 refuses the rule at configuration load (`Action: SanitiseRequestHeader is not yet supported.`).
+
 {{% notice note %}}
 
 The sanitize actions affect only the data as it is logged to audit log. High-level debug logs may contain sensitive data. Apache access log may contain sensitive data placed in the request URI.
@@ -755,6 +769,8 @@ Prevents a named response header from being logged to audit log. Each byte of th
 ``` apache
 SecAction "phase:3,nolog,pass,id:136,sanitiseResponseHeader:Set-Cookie"
 ```
+
+libModSecurity v3 refuses the rule at configuration load (`Action: SanitiseResponseHeader is not yet supported.`).
 
 {{% notice note %}}
 
@@ -857,7 +873,7 @@ In ModSecurity v2, when used in a chain this action will be executed when an ind
 
 ## setvar
 
-Creates, removes, or updates a variable. Variable names are case-insensitive.
+Creates, removes, or updates a variable. Variable names are case-insensitive. libModSecurity v3 stores setvar only in the TX, IP, GLOBAL, RESOURCE, SESSION and USER collections; a setvar on any other variable is accepted by the parser but does nothing.
 
 {{< secmeta group="Non-disruptive" v2="yes" v3="yes" >}}
 
@@ -915,6 +931,8 @@ SecRule &REQUEST_HEADERS:Accept "@eq 0" "phase:1,id:142,deny,msg:'Request Missin
 
 The skip action works only within the current processing phase and not necessarily in the order in which the rules appear in the configuration file. If you place a phase 2 rule after a phase 1 rule that uses skip, it will not skip over the phase 2 rule. It will skip over the next phase 1 rule that follows it in the phase.
 
+In libModSecurity v3 `skip:0` skips nothing, and the counter is not reset at the end of a phase: a count larger than the number of rules left in the phase carries over and skips the first rules of the next phase.
+
 ## skipAfter
 
 {{< secmeta group="Flow" v2="2.5.0" v3="yes" >}}
@@ -951,6 +969,8 @@ SecMarker END_HOST_CHECK
 ```
 
 The skipAfter action works only within the current processing phase and not necessarily the order in which the rules appear in the configuration file. If you place a phase 2 rule after a phase 1 rule that uses skipAfter, it will not skip over the phase 2 rule. It will skip over the next phase 1 rule that follows it in the phase.
+
+libModSecurity v3 places every SecMarker in all phases and does not clear an active skipAfter at the end of a phase: if the marker is not reached in the current phase, the rules of the following phases are also skipped until it is.
 
 ## status
 
@@ -999,7 +1019,7 @@ The tag information appears along with other rule metadata. The purpose of the t
 
 ## ver
 
-Specifies the rule set version.
+Specifies the rule set version. libModSecurity v3 requires the value to be single-quoted (`ver:'CRS/2.2.4'`); the unquoted form is a parse error.
 
 {{< secmeta group="Meta-data" v2="2.7" v3="yes" >}}
 
@@ -1013,7 +1033,7 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
 
 ## xmlns
 
-Configures an XML namespace, which will be used in the execution of XPath expressions. The parameter has the form `prefix=uri`; several xmlns actions may be given on one rule.
+Configures an XML namespace, which will be used in the execution of XPath expressions. The parameter has the form `prefix=uri`; several xmlns actions may be given on one rule. libModSecurity v3 requires the URI to start with `http://` and to be unquoted or single-quoted (`xmlns:soap='http://...'`).
 
 {{< secmeta group="Data" v2="yes" v3="yes" >}}
 

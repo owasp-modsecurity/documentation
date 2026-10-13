@@ -47,4 +47,4 @@ Use the branch that matches your target (`epel9`, `epel10`, `f44`, ...). Check t
 
 ## libModSecurity v3
 
-The same approach applies to the v3 library and the nginx connector: Debian and Ubuntu package `libmodsecurity3` (source package `modsecurity`) and `libnginx-mod-http-modsecurity`; Fedora and EPEL package `libmodsecurity` but no nginx connector. Rebuild those packaging sources against the newer release with the commands above.
+The same approach applies to the v3 library and the nginx connector: Debian and Ubuntu package `libmodsecurity3` (source package `modsecurity`) and `libnginx-mod-http-modsecurity`; Fedora and EPEL package `libmodsecurity` and `nginx-mod-modsecurity`. Rebuild those packaging sources against the newer release with the commands above.
