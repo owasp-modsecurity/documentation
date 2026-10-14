@@ -41,7 +41,11 @@ Decodes a Base64-encoded string.
 
 ``` seclang
 SecRule REQUEST_HEADERS:Authorization "@rx ^Basic ([a-zA-Z0-9]+=*)$" \
-    "id:93,phase:1,capture,logdata:%{TX.1},chain"
+    "id:93,\
+    phase:1,\
+    capture,\
+    logdata:%{TX.1},\
+    chain"
     SecRule TX:1 "@rx ^(\w+):" "capture,t:base64Decode,chain"
         SecRule TX:1 "@rx ^(admin|root|backup)$"
 ```
@@ -113,7 +117,10 @@ ModSecurity v2 registers this function as `cmdline`; because transformation name
 
 ``` seclang
 SecRule ARGS "@rx (?:command(?:.com)?|cmd(?:.exe)?)(?:/.*)?/[ck]" \
-    "id:94,phase:2,t:none,t:cmdLine"
+    "id:94,\
+    phase:2,\
+    t:none,\
+    t:cmdLine"
 ```
 
 ## compressWhitespace

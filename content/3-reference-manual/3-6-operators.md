@@ -136,7 +136,9 @@ For further information on ssdeep, visit its site: <http://ssdeep.sourceforge.ne
 
 ``` seclang
 SecRule REQUEST_BODY "@rx \@fuzzyHash /path/to/ssdeep/hashes.txt 6" \
-    "id:192372,deny,log"
+    "id:192372,\
+    deny,\
+    log"
 ```
 
 ## ge
@@ -514,7 +516,10 @@ SecAction "id:168,phase:1,pass,nolog,setvar:tx.REMOTE_ADDR=/%{REMOTE_ADDR}/"
 
 # Check if REMOTE_ADDR is blacklisted
 SecRule TX:REMOTE_ADDR "@pmFromFile blacklist.txt" \
-    "id:169,phase:1,deny,msg:'Blacklisted IP address'"
+    "id:169,\
+    phase:1,\
+    deny,\
+    msg:'Blacklisted IP address'"
 ```
 
 The file blacklist.txt may contain:
@@ -612,7 +617,11 @@ Performs regular expression data substitution when applied to either the STREAM_
 ``` seclang
 SecStreamOutBodyInspection On
 SecRule STREAM_OUTPUT_BODY "@rsub s/<!--.*?-->/ /" \
-    "id:172,phase:4,pass,t:none,nolog"
+    "id:172,\
+    phase:4,\
+    pass,\
+    t:none,\
+    nolog"
 ```
 
 {{% notice note %}}
@@ -721,7 +730,12 @@ Will force the rule to always return true. This is similar to SecAction however 
 
 ``` seclang
 SecRule REMOTE_ADDR "@unconditionalMatch" \
-    "id:1000,phase:1,pass,t:hexEncode,nolog,setvar:TX.ip_hash=%{MATCHED_VAR}"
+    "id:1000,\
+    phase:1,\
+    pass,\
+    t:hexEncode,\
+    nolog,\
+    setvar:TX.ip_hash=%{MATCHED_VAR}"
 ```
 
 ## validateByteRange
@@ -769,11 +783,19 @@ Validates the XML DOM tree against the supplied DTD. The DOM tree must have been
 ``` seclang
 # Parse the request bodies that contain XML
 SecRule REQUEST_HEADERS:Content-Type "@rx ^text/xml$" \
-    "id:180,phase:1,pass,t:lowercase,nolog,ctl:requestBodyProcessor=XML"
+    "id:180,\
+    phase:1,\
+    pass,\
+    t:lowercase,\
+    nolog,\
+    ctl:requestBodyProcessor=XML"
 
 # Validate XML payload against DTD
 SecRule XML "@validateDTD /path/to/xml.dtd" \
-    "id:181,phase:2,deny,msg:'Failed DTD validation'"
+    "id:181,\
+    phase:2,\
+    deny,\
+    msg:'Failed DTD validation'"
 ```
 
 **NOTE:** You must enable the `SecXmlExternalEntity` directive.
@@ -788,7 +810,10 @@ Validates REQUEST_URI that contains data protected by the hash engine. Added in 
 
 ``` seclang
 # Validates requested URI that matches a regular expression.
-SecRule REQUEST_URI "@validatehash "product_info|product_list" "phase:1,deny,id:123456"
+SecRule REQUEST_URI "@validateHash product_info|product_list" \
+    "id:123456,\
+    phase:1,\
+    deny"
 ```
 
 ## validateSchema
@@ -802,11 +827,19 @@ Validates the XML DOM tree against the supplied XML Schema. The DOM tree must ha
 ``` seclang
 # Parse the request bodies that contain XML
 SecRule REQUEST_HEADERS:Content-Type "@rx ^text/xml$" \
-    "id:190,phase:1,pass,t:lowercase,nolog,ctl:requestBodyProcessor=XML"
+    "id:190,\
+    phase:1,\
+    pass,\
+    t:lowercase,\
+    nolog,\
+    ctl:requestBodyProcessor=XML"
 
 # Validate XML payload against DTD
 SecRule XML "@validateSchema /path/to/xml.xsd" \
-    "id:191,phase:2,deny,msg:'Failed DTD validation'"
+    "id:191,\
+    phase:2,\
+    deny,\
+    msg:'Failed DTD validation'"
 ```
 
 **NOTE:** You must enable the `SecXmlExternalEntity` directive.
@@ -887,7 +920,12 @@ Detects CPF numbers (Brazilian social number) in input. This operator will first
 # Detect CPF numbers in parameters and
 # prevent them from being logged to audit log
 SecRule ARGS "@verifyCPF /^([0-9]{3}\.){2}[0-9]{3}-[0-9]{2}$/" \
-    "id:195,phase:2,pass,nolog,msg:'Potential CPF number',sanitiseMatched"
+    "id:195,\
+    phase:2,\
+    pass,\
+    nolog,\
+    msg:'Potential CPF number',\
+    sanitiseMatched"
 ```
 
 {{% notice note %}}
@@ -951,7 +989,12 @@ Detects Austrian social insurance numbers (Sozialversicherungsnummer, SVNR) in i
 # Detect Austrian social insurance numbers in parameters and
 # prevent them from being logged to audit log
 SecRule ARGS "@verifySVNR \d{4}\s?\d{6}" \
-    "id:198,phase:2,pass,nolog,msg:'Potential SVNR number',sanitiseMatched"
+    "id:198,\
+    phase:2,\
+    pass,\
+    nolog,\
+    msg:'Potential SVNR number',\
+    sanitiseMatched"
 ```
 
 **verifySVNR checks:**
@@ -989,7 +1032,11 @@ There are no delimiters for this operator, it is therefore often necessary to ar
 
 ``` seclang
 SecRule REQUEST_HEADERS_NAMES "@rx ^.*$" \
-    "id:1,block,t:lowercase,setvar:'tx.header_name=/%{tx.0}/',chain"
+    "id:1,\
+    block,\
+    t:lowercase,\
+    setvar:'tx.header_name=/%{tx.0}/',\
+    chain"
     SecRule TX:header_name "@within /proxy/ /lock-token/ /content-range/ /translate/ /if/" \
         "t:none"
 ```

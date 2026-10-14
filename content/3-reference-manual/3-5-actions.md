@@ -103,7 +103,10 @@ Example:
 
 ``` seclang
 SecRule RESPONSE_CONTENT_TYPE "@rx ^text/html" \
-    "id:99,pass,nolog,append:'<hr>Footer'"
+    "id:99,\
+    pass,\
+    nolog,\
+    append:'<hr>Footer'"
 ```
 
 A rule can carry only one append action (a second one replaces the first), and a later matching rule that uses append replaces the text set by an earlier one. libModSecurity v3 refuses the rule at configuration load (`Action: Append is not yet supported.`).
@@ -182,7 +185,11 @@ Example:
 
 ``` seclang
 SecRule REQUEST_BODY "@rx ^username=(\w{25,})" \
-    "id:105,phase:2,capture,t:none,chain"
+    "id:105,\
+    phase:2,\
+    capture,\
+    t:none,\
+    chain"
     SecRule TX:1 "@rx (?:(?:a(dmin|nonymous)))"
 ```
 
@@ -236,11 +243,18 @@ Changes ModSecurity configuration on transient, per-transaction basis. Any chang
 ``` seclang
 # Parse requests with Content-Type "text/xml" as XML
 SecRule REQUEST_CONTENT_TYPE "@rx ^text/xml" \
-    "id:106,pass,nolog,ctl:requestBodyProcessor=XML"
+    "id:106,\
+    pass,\
+    nolog,\
+    ctl:requestBodyProcessor=XML"
 
 # white-list the user parameter for rule #981260 when the REQUEST_URI is /index.php
 SecRule REQUEST_URI "@beginsWith /index.php" \
-    "phase:1,pass,t:none,nolog,ctl:ruleRemoveTargetById=981260;ARGS:user"
+    "phase:1,\
+    pass,\
+    t:none,\
+    nolog,\
+    ctl:ruleRemoveTargetById=981260;ARGS:user"
 ```
 
 The following configuration options are supported. Unless noted otherwise an option is available in both ModSecurity v2 and libModSecurity v3:
@@ -318,7 +332,11 @@ SecRule ARGS:login "!@rx ^$" \
     setvar:ip.auth_attempt=+1,\
     deprecatevar:ip.auth_attempt=25/120"
 SecRule IP:AUTH_ATTEMPT "@gt 25" \
-    "id:111,phase:1,drop,log,msg:'Possible Brute Force Attack'"
+    "id:111,\
+    phase:1,\
+    drop,\
+    log,\
+    msg:'Possible Brute Force Attack'"
 ```
 
 {{% notice note %}}
@@ -352,7 +370,10 @@ SecRule REQUEST_URI "@rx ^/cgi-bin/script\.pl" \
 
 # Run Lua script on rule match
 SecRule ARGS:p "@rx attack" \
-    "id:113,phase:2,block,exec:/usr/local/apache/conf/exec.lua"
+    "id:113,\
+    phase:2,\
+    block,\
+    exec:/usr/local/apache/conf/exec.lua"
 ```
 
 The exec action is executed independently from any disruptive actions specified. External scripts will always be called with no parameters. Some transaction information will be placed in environment variables. All the usual CGI environment variables will be there. You should be aware that forking a threaded process results in all threads being replicated in the new process. Forking can therefore incur larger overhead in a multithreaded deployment. The script you execute must write something (anything) to stdout; if it doesn’t, ModSecurity will assume that the script failed, and will record the failure.
@@ -369,7 +390,11 @@ Configures a collection variable to expire after the given time period (in secon
 
 ``` seclang
 SecRule REQUEST_COOKIES:JSESSIONID "!@rx ^$" \
-    "id:114,phase:1,pass,nolog,setsid:%{REQUEST_COOKIES:JSESSIONID}"
+    "id:114,\
+    phase:1,\
+    pass,\
+    nolog,\
+    setsid:%{REQUEST_COOKIES:JSESSIONID}"
 SecRule REQUEST_URI "@rx ^/cgi-bin/script\.pl" \
     "id:115,\
     phase:2,\
@@ -397,7 +422,10 @@ Assigns a unique, numeric ID to the rule or chain in which it appears. Starting 
 
 ``` seclang
 SecRule &REQUEST_HEADERS:Host "@eq 0" \
-    "id:60008,log,msg:'Request Missing a Host Header',severity:2"
+    "id:60008,\
+    log,\
+    msg:'Request Missing a Host Header',\
+    severity:2"
 ```
 
 {{% notice note %}}
@@ -544,7 +572,10 @@ Assigns a custom message to the rule or chain in which it appears. The message w
 
 ``` seclang
 SecRule &REQUEST_HEADERS:Host "@eq 0" \
-    "id:60008,log,msg:'Request Missing a Host Header',severity:2"
+    "id:60008,\
+    log,\
+    msg:'Request Missing a Host Header',\
+    severity:2"
 ```
 
 {{% notice note %}}
@@ -563,7 +594,13 @@ If enabled, ModSecurity will perform multiple operator invocations for every tar
 
 ``` seclang
 SecRule ARGS "@rx attack" \
-    "id:119,phase:1,deny,t:removeNulls,t:lowercase,log,multiMatch"
+    "id:119,\
+    phase:1,\
+    deny,\
+    t:removeNulls,\
+    t:lowercase,\
+    log,\
+    multiMatch"
 ```
 
 Normally, variables are inspected only once per rule, and only after all transformation functions have been completed. With multiMatch, variables are checked against the operator before and after every transformation function that changes the input.
@@ -683,7 +720,12 @@ Prepends the text given as parameter to response body. Content injection must be
 **Example:**
 
 ``` seclang
-SecRule RESPONSE_CONTENT_TYPE ^text/html \ "phase:3,nolog,pass,id:128,prepend:'Header<br>'"
+SecRule RESPONSE_CONTENT_TYPE "@rx ^text/html" \
+    "id:128,\
+    phase:3,\
+    pass,\
+    nolog,\
+    prepend:'Header<br>'"
 ```
 
 A rule can carry only one prepend action (a second one replaces the first), and a later matching rule that uses prepend replaces the text set by an earlier one. libModSecurity v3 refuses the rule at configuration load (`Action: Prepend is not yet supported.`).
@@ -704,7 +746,9 @@ Intercepts the current transaction by forwarding the request to another web serv
 
 ``` seclang
 SecRule REQUEST_HEADERS:User-Agent "@rx Test" \
-    "id:129,proxy:http://honeypothost/,log"
+    "id:129,\
+    proxy:http://honeypothost/,\
+    log"
 SecRule REQUEST_URI "@streq /test.txt" \
     "id:500005,\
     phase:1,\
@@ -729,7 +773,10 @@ Intercepts transaction by issuing an external (client-visible) redirection to th
 
 ``` seclang
 SecRule REQUEST_HEADERS:User-Agent "@rx Test" \
-    "id:130,phase:1,redirect:http://www.example.com/failed.html,log"
+    "id:130,\
+    phase:1,\
+    redirect:http://www.example.com/failed.html,\
+    log"
 ```
 
 If the status action is present on the same rule, and its value can be used for a redirection (i.e., is one of the following: 301, 302, 303, or 307), the value will be used for the redirection status code. Otherwise, status code 302 will be used. libModSecurity v3 (since 3.0.3) keeps any status in the 301-307 range and macro-expands the location.
@@ -911,7 +958,10 @@ Assigns severity to the rule in which it is used.
 
 ``` seclang
 SecRule REQUEST_METHOD "@rx ^PUT$" \
-    "id:340002,msg:'Restricted HTTP function',rev:1,severity:CRITICAL"
+    "id:340002,\
+    msg:'Restricted HTTP function',\
+    rev:1,\
+    severity:CRITICAL"
 ```
 
 Severity values in ModSecurity follows the numeric scale of syslog (where 0 is the most severe). The data below is used by the OWASP ModSecurity Core Rule Set (CRS):
@@ -975,7 +1025,10 @@ Special-purpose action that initializes the SESSION collection using the session
 ``` seclang
 # Initialize session variables using the session cookie value
 SecRule REQUEST_COOKIES:PHPSESSID "!@rx ^$" \
-    "id:138,pass,nolog,setsid:%{REQUEST_COOKIES.PHPSESSID}"
+    "id:138,\
+    pass,\
+    nolog,\
+    setsid:%{REQUEST_COOKIES.PHPSESSID}"
 ```
 
 Note
@@ -994,7 +1047,12 @@ Creates, removes, and updates environment variables that can be accessed by the 
 
 ``` seclang
 SecRule RESPONSE_HEADERS:/Set-Cookie2?/ "@rx (?i:(j?sessionid|(php)?sessid|(asp|jserv|jw)?session[-_]?(id)?|cf(id|token)|sid))" \
-    "id:139,phase:3,pass,t:none,nolog,setvar:tx.sessionid=%{matched_var}"
+    "id:139,\
+    phase:3,\
+    pass,\
+    t:none,\
+    nolog,\
+    setvar:tx.sessionid=%{matched_var}"
 SecRule TX:SESSIONID "!@rx (?i:\;? ?httponly;?)" \
     "id:140,\
     phase:3,\
@@ -1066,7 +1124,12 @@ When used in a chain this action will be executed when an individual rule matche
 
 ``` seclang
 SecRule REQUEST_FILENAME "@contains /test.php" \
-    "id:7,phase:1,t:none,nolog,setvar:tx.auth_attempt=+1,chain"
+    "id:7,\
+    phase:1,\
+    t:none,\
+    nolog,\
+    setvar:tx.auth_attempt=+1,\
+    chain"
     SecRule ARGS_POST:action "@streq login" "t:none"
 ```
 
@@ -1091,7 +1154,10 @@ SecRule REMOTE_ADDR "@rx ^127\.0\.0\.1$" "id:141,phase:1,skip:1"
 
 # This rule will be skipped over when REMOTE_ADDR is 127.0.0.1
 SecRule &REQUEST_HEADERS:Accept "@eq 0" \
-    "id:142,phase:1,deny,msg:'Request Missing an Accept Header'"
+    "id:142,\
+    phase:1,\
+    deny,\
+    msg:'Request Missing an Accept Header'"
 ```
 
 The skip action works only within the current processing phase and not necessarily in the order in which the rules appear in the configuration file. If you place a phase 2 rule after a phase 1 rule that uses skip, it will not skip over the phase 2 rule. It will skip over the next phase 1 rule that follows it in the phase.
@@ -1109,11 +1175,16 @@ Description: Skips one or more rules (or chains) on a successful match, resuming
 ``` seclang
 # Require Accept header, but not from access from the localhost
 SecRule REMOTE_ADDR "@rx ^127\.0\.0\.1$" \
-    "id:143,phase:1,skipAfter:IGNORE_LOCALHOST"
+    "id:143,\
+    phase:1,\
+    skipAfter:IGNORE_LOCALHOST"
 
 # This rule will be skipped over when REMOTE_ADDR is 127.0.0.1
 SecRule &REQUEST_HEADERS:Accept "@eq 0" \
-    "id:144,phase:1,deny,msg:'Request Missing an Accept Header'"
+    "id:144,\
+    phase:1,\
+    deny,\
+    msg:'Request Missing an Accept Header'"
 SecMarker IGNORE_LOCALHOST
 ```
 
@@ -1288,5 +1359,7 @@ SecRule REQUEST_HEADERS:Content-Type "@rx text/xml" \
     ctl:requestBodyAccess=On,\
     xmlns:xsd=" http://www.w3.org/2001/XMLSchema"
 SecRule XML:/soap:Envelope/soap:Body/q1:getInput/id() "@rx 123" \
-    "id:148,phase:2,deny"
+    "id:148,\
+    phase:2,\
+    deny"
 ```

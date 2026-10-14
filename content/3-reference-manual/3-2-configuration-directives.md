@@ -1198,7 +1198,12 @@ This directive will overwrite the action list of the specified rule with the act
 
 ``` seclang
 SecRule ARGS "@rx attack" \
-    "id:12345,phase:2,pass,t:lowercase,log,msg:'Message text'"
+    "id:12345,\
+    phase:2,\
+    pass,\
+    t:lowercase,\
+    log,\
+    msg:'Message text'"
 SecRuleUpdateActionById 12345 "t:none,t:compressWhitespace,deny,status:403,msg:'New message text'"
 ```
 
