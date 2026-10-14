@@ -446,7 +446,7 @@ These are the reserved ranges:
 - 440.000-599,999: unused (available for reservation)
 - 600,000-699,999: reserved for use by Akamai [3](http://www.akamai.com/html/solutions/waf.html)
 - 700,000–799,999: reserved for Ivan Ristic
-- 900,000–999,999: reserved for the OWASP ModSecurity Core Rule Set [4](http://www.owasp.org/index.php/Category:OWASP_ModSecurity_Core_Rule_Set_Project) project
+- 900,000–999,999: reserved for the OWASP CRS [4](http://www.owasp.org/index.php/Category:OWASP_ModSecurity_Core_Rule_Set_Project) project
 - 1,000,000-1,009,999: reserved for rules published by Redhat Security Team
 - 1,010,000-1,999,999: reserved for WAF \| Web Application Firewall and Load Balancer Security (kemptechnologies.com) [5](https://kemptechnologies.com/solutions/waf/)
 - 2,000,000-2,999,999: reserved for rules from Trustwave's SpiderLabs Research team
@@ -964,7 +964,7 @@ SecRule REQUEST_METHOD "@rx ^PUT$" \
     severity:CRITICAL"
 ```
 
-Severity values in ModSecurity follows the numeric scale of syslog (where 0 is the most severe). The data below is used by the OWASP ModSecurity Core Rule Set (CRS):
+Severity values in ModSecurity follows the numeric scale of syslog (where 0 is the most severe). The data below is used by the OWASP CRS:
 
 - **0 - EMERGENCY**: is generated from correlation of anomaly scoring data where there is an inbound attack and an outbound leakage.
 - **1 - ALERT**: is generated from correlation where there is an inbound attack and an outbound application level error.

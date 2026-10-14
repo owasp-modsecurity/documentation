@@ -195,7 +195,7 @@ It is inevitable; you will run into some False Positive hits when using web appl
 
 ### Will using a large amount of negative filtering rules impact performance?
 
-Yes. Each and every rule that you implement will consume resources (RAM, CPU, etc...). The two most important factors to consider with creating ModSecurity rules are the total number of rules and the Regular Expression optimizations. A single rule with a complex regular expression is significantly faster than multiple rules with simple regular expressions. Unfortunately, it is quite easy to create inefficient RegEx patterns. Optimizing RegExs by utilizing Grouping Only/Non-Capturing Parentheses can cut the validation time by up to 50%. The Core Rule Set is optimized for performance.
+Yes. Each and every rule that you implement will consume resources (RAM, CPU, etc...). The two most important factors to consider with creating ModSecurity rules are the total number of rules and the Regular Expression optimizations. A single rule with a complex regular expression is significantly faster than multiple rules with simple regular expressions. Unfortunately, it is quite easy to create inefficient RegEx patterns. Optimizing RegExs by utilizing Grouping Only/Non-Capturing Parentheses can cut the validation time by up to 50%. The OWASP CRS is optimized for performance.
 
 ### What is a Virtual Patch and why should I care?
 

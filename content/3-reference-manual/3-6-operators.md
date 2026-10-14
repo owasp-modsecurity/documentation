@@ -239,7 +239,7 @@ The @inspectFile operator was initially designed for file inspection (hence the 
 
 An external program must print one line: output starting with `1` means the file is accepted (no match), anything else is treated as a rejection and the operator matches (the output is logged as the reason). A Lua script matches when its `main` function returns a string and does not match when it returns `nil`. In libModSecurity v3 the program must exit with status 0 and print at least two characters for a match to be possible, the output is not logged, and a Lua script matches only when `main` returns a non-empty string.
 
-The OWASP ModSecurity Core Rule Set (CRS) includes a utility script in the /util directory called runav.pl ([util/av-scanning/runav.pl](https://github.com/coreruleset/coreruleset/blob/v3.3/master/util/av-scanning/runav.pl) in CRS 3.3; CRS 4 no longer ships it) that allows the file approval mechanism to integrate with the ClamAV virus scanner. This is especially handy to prevent viruses and exploits from entering the web server through file upload.
+The OWASP CRS includes a utility script in the /util directory called runav.pl ([util/av-scanning/runav.pl](https://github.com/coreruleset/coreruleset/blob/v3.3/master/util/av-scanning/runav.pl) in CRS 3.3; CRS 4 no longer ships it) that allows the file approval mechanism to integrate with the ClamAV virus scanner. This is especially handy to prevent viruses and exploits from entering the web server through file upload.
 
 ``` perl
 #!/usr/bin/perl

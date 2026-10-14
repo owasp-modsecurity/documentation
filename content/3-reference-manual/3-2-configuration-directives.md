@@ -618,7 +618,7 @@ Adds a fixed rule marker that can be used as a target in a skipAfter action. A S
 
 {{< secmeta syntax="SecMarker ID|TEXT" example="SecMarker 9999" scope="Any" v2="2.5.0" v3="3.0.0" >}}
 
-The value can be either a number or a text string. The SecMarker directive is available to allow you to choose the best way to implement a skip-over. Here is an example used from the Core Rule Set:
+The value can be either a number or a text string. The SecMarker directive is available to allow you to choose the best way to implement a skip-over. Here is an example used from the OWASP CRS:
 
 ``` seclang
 SecMarker BEGIN_HOST_CHECK

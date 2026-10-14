@@ -22,7 +22,7 @@ This page is for administrators moving a working ModSecurity v2 (Apache `mod_sec
 ## Rule evaluation differences to check in custom rules
 
 - **Default phase.** A rule without `phase:` runs in phase 2 in v2 but in phase 1 in v3. Set `phase:` on every rule.
-- **`SecDefaultAction`.** v3 allows one `SecDefaultAction` per phase and rejects a second one; it also applies the inherited disruptive action only to rules that carry `block`. v2 lets a later `SecDefaultAction` replace an earlier one.
+- **`SecDefaultAction`.** v3 allows one `SecDefaultAction` per phase and rejects a second one, requires it to name a real disruptive action (`block` is not accepted there), and applies its disruptive action to a rule only through `block`; a rule without any disruptive action does not inherit one. v2 lets a later `SecDefaultAction` replace an earlier one and applies its disruptive action to every rule that has none.
 - **Phase 4 without body inspection.** v2 runs phase 4 rules with an empty `RESPONSE_BODY`; v3 skips phase 4 when `SecResponseBodyAccess` is Off or the MIME type is not inspected.
 - **`skipAfter`.** If the named `SecMarker` does not exist, v3 skips every remaining rule of every later phase; v2 ends the skip with the phase.
 - **`ctl:ruleEngine=Off`.** v2 stops the current phase immediately; v3 only checks the engine state when a phase starts.
@@ -30,12 +30,13 @@ This page is for administrators moving a working ModSecurity v2 (Apache `mod_sec
 - **`initcol` and `setvar` in one rule.** v3 runs `setvar` before `initcol` within the same rule; initialize the collection in a separate, earlier rule.
 - **`SecUploadKeepFiles RelevantOnly`** is rejected by v3; use `On` or `Off`.
 - **`SecCookieFormat 1`** is not supported by v3.
+- **`SecCollectionTimeout`**, **`SecStatusEngine`** and **`SecPcreMatchLimitRecursion`** are accepted by v3 but ignored, so a configuration that relies on collection expiry needs `expirevar` instead.
 
 See [Processing Phases]({{% relref "3-reference-manual/3-1-processing-phases" %}}) for details.
 
 ## Not supported in v3
 
-The lists below contain the v2 features that libModSecurity v3 does not implement, taken from the compatibility matrix of the [SecLang specification](https://seclang.org/compat/matrix/) (`compat/matrix.json`, entries with `v2: true, v3: false`; see [Rules language porting specification]({{% relref "6-migration/6-3-rules-language-porting" %}})). Most of them are tied to Apache internals or to retired services and are marked deprecated in the specification; no current rule set uses them.
+The lists below contain the v2 features that libModSecurity v3 does not implement, verified against the v3.0.17 parser and cross-checked with the compatibility matrix of the [SecLang specification](https://seclang.org/compat/matrix/) (see [SecLang specification]({{% relref "6-migration/6-3-rules-language-porting" %}})). Most of them are tied to Apache internals or to retired services and are marked deprecated in the specification; no current rule set uses them.
 
 ### Directives
 
@@ -60,7 +61,7 @@ Rejected by the v3 parser at load time (remove them from the configuration):
 - `PERF_*` rule-timing variables: [PERF_ALL]({{% relref "3-reference-manual/3-3-variables#perf_all" %}}), [PERF_COMBINED]({{% relref "3-reference-manual/3-3-variables#perf_combined" %}}), [PERF_GC]({{% relref "3-reference-manual/3-3-variables#perf_gc" %}}), [PERF_LOGGING]({{% relref "3-reference-manual/3-3-variables#perf_logging" %}}), [PERF_PHASE1]({{% relref "3-reference-manual/3-3-variables#perf_phase1" %}}) through `PERF_PHASE5`, [PERF_RULES]({{% relref "3-reference-manual/3-3-variables#perf_rules" %}}), [PERF_SREAD]({{% relref "3-reference-manual/3-3-variables#perf_sread" %}}), [PERF_SWRITE]({{% relref "3-reference-manual/3-3-variables#perf_swrite" %}})
 - `SCRIPT_*` variables (Apache file metadata): [SCRIPT_BASENAME]({{% relref "3-reference-manual/3-3-variables#script_basename" %}}), [SCRIPT_FILENAME]({{% relref "3-reference-manual/3-3-variables#script_filename" %}}), [SCRIPT_GID]({{% relref "3-reference-manual/3-3-variables#script_gid" %}}), [SCRIPT_GROUPNAME]({{% relref "3-reference-manual/3-3-variables#script_groupname" %}}), [SCRIPT_MODE]({{% relref "3-reference-manual/3-3-variables#script_mode" %}}), [SCRIPT_UID]({{% relref "3-reference-manual/3-3-variables#script_uid" %}}), [SCRIPT_USERNAME]({{% relref "3-reference-manual/3-3-variables#script_username" %}})
 - [SDBM_DELETE_ERROR]({{% relref "3-reference-manual/3-3-variables#sdbm_delete_error" %}}) - no SDBM in v3.
-- [STATUS_LINE]({{% relref "3-reference-manual/3-3-variables#status_line" %}}) - use `RESPONSE_STATUS` and `RESPONSE_PROTOCOL`.
+- [STATUS_LINE]({{% relref "3-reference-manual/3-3-variables#status_line" %}}) exists in v3 but holds only the status code (it is an alias of `STATUS`); use `RESPONSE_PROTOCOL` for the protocol.
 - [STREAM_INPUT_BODY]({{% relref "3-reference-manual/3-3-variables#stream_input_body" %}}) and [STREAM_OUTPUT_BODY]({{% relref "3-reference-manual/3-3-variables#stream_output_body" %}})
 - [USERAGENT_IP]({{% relref "3-reference-manual/3-3-variables#useragent_ip" %}})
 - [WEBSERVER_ERROR_LOG]({{% relref "3-reference-manual/3-3-variables#webserver_error_log" %}}) - Apache error log messages are not visible to the library.
@@ -73,11 +74,11 @@ Rejected by the v3 parser at load time (remove them from the configuration):
 - [pause]({{% relref "3-reference-manual/3-5-actions#pause" %}})
 - [proxy]({{% relref "3-reference-manual/3-5-actions#proxy" %}}) - relied on Apache mod_proxy.
 - [sanitiseArg]({{% relref "3-reference-manual/3-5-actions#sanitisearg" %}}), [sanitiseMatched]({{% relref "3-reference-manual/3-5-actions#sanitisematched" %}}), [sanitiseMatchedBytes]({{% relref "3-reference-manual/3-5-actions#sanitisematchedbytes" %}}), [sanitiseRequestHeader]({{% relref "3-reference-manual/3-5-actions#sanitiserequestheader" %}}), [sanitiseResponseHeader]({{% relref "3-reference-manual/3-5-actions#sanitiseresponseheader" %}}) - audit log masking.
-- The following [ctl]({{% relref "3-reference-manual/3-5-actions#ctl" %}}) options: `debugLogLevel`, `hashEnforcement`, `hashEngine`, `requestBodyLimit`, `responseBodyAccess`, `responseBodyLimit`, `ruleRemoveByMsg`, `ruleRemoveTargetByMsg`. v3 implements `auditEngine`, `auditLogParts`, `requestBodyAccess`, `requestBodyProcessor`, `ruleEngine`, `ruleRemoveById`, `ruleRemoveByTag`, `ruleRemoveTargetById` and `ruleRemoveTargetByTag`.
+- The following [ctl]({{% relref "3-reference-manual/3-5-actions#ctl" %}}) options, which the v3 parser rejects: `debugLogLevel`, `hashEnforcement`, `hashEngine`, `requestBodyLimit`, `responseBodyAccess`, `responseBodyLimit`, `ruleRemoveByMsg`, `ruleRemoveTargetByMsg`. v3 implements `auditEngine`, `auditLogParts`, `parseXmlIntoArgs`, `requestBodyAccess`, `requestBodyProcessor`, `ruleEngine`, `ruleRemoveById`, `ruleRemoveByTag`, `ruleRemoveTargetById` and `ruleRemoveTargetByTag`, and accepts `forceRequestBodyVariable` as a no-op (`REQUEST_BODY` is always populated).
 
 ### Operators
 
-- [gsbLookup]({{% relref "3-reference-manual/3-6-operators#gsblookup" %}}) and [rsub]({{% relref "3-reference-manual/3-6-operators#rsub" %}}) load but have nothing to operate on in v3, because the directive and the variables they depend on are not supported (see above). No other v2 operator is missing.
+- [gsbLookup]({{% relref "3-reference-manual/3-6-operators#gsblookup" %}}), [rsub]({{% relref "3-reference-manual/3-6-operators#rsub" %}}) and [validateHash]({{% relref "3-reference-manual/3-6-operators#validatehash" %}}) are rejected by the v3 parser at load time (`Operator: ... is not yet supported`). No other v2 operator is missing.
 
 ### Transformations
 
