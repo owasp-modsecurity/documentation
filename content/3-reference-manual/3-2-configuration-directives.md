@@ -1204,7 +1204,12 @@ SecRule ARGS "@rx attack" \
     t:lowercase,\
     log,\
     msg:'Message text'"
-SecRuleUpdateActionById 12345 "t:none,t:compressWhitespace,deny,status:403,msg:'New message text'"
+SecRuleUpdateActionById 12345 \
+    "t:none,\
+    t:compressWhitespace,\
+    deny,\
+    status:403,\
+    msg:'New message text'"
 ```
 
 The effective resulting rule in the previous example will be as follows:

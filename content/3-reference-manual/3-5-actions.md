@@ -170,7 +170,7 @@ SecDefaultAction "id:104,phase:2,deny,status:403,log,auditlog"
 SecRule ARGS "@rx attack1" "id:1,phase:2,deny"
 
 # Change how rule ID 1 blocks
-SecRuleUpdateActionById 1 block
+SecRuleUpdateActionById 1 "block"
 ```
 
 libModSecurity v3 runs the disruptive action of the SecDefaultAction defined for the rule's phase; if there is none for that phase, block does nothing. v3 requires SecDefaultAction to name a real disruptive action (`block` is not accepted there) and allows it only once per phase.
