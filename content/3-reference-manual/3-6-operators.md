@@ -16,7 +16,7 @@ Returns true if the parameter string is found at the beginning of the input. Mac
 **Example:**
 
 ``` seclang
-# Detect request line that does not begin with "GET" 
+# Detect request line that does not begin with "GET"
 SecRule REQUEST_LINE "!@beginsWith GET" "id:149"
 ```
 
@@ -29,7 +29,7 @@ Returns true if the parameter string is found anywhere in the input. Macro expan
 **Example:**
 
 ``` seclang
-# Detect ".php" anywhere in the request line 
+# Detect ".php" anywhere in the request line
 SecRule REQUEST_LINE "@contains .php" "id:150"
 ```
 
@@ -42,7 +42,7 @@ Returns true if the parameter string (with word boundaries) is found anywhere in
 **Example:**
 
 ``` seclang
-# Detect "select" anywhere in ARGS 
+# Detect "select" anywhere in ARGS
 SecRule ARGS "@containsWord select" "id:151"
 ```
 
@@ -61,7 +61,7 @@ Returns true if SQL injection payload is found. This operator uses LibInjection 
 **Example:**
 
 ``` seclang
-# Detect SQL Injection inside request uri data" 
+# Detect SQL Injection inside request uri data"
 SecRule REQUEST_URI "@detectSQLi" "id:152"
 ```
 
@@ -80,8 +80,8 @@ Returns true if XSS injection is found. This operator uses LibInjection to detec
 **Example:**
 
 ``` seclang
-# Detect XSS Injection inside request body 
-SecRule REQUEST_BODY "@detectXSS" "id:12345,log,deny"
+# Detect XSS Injection inside request body
+SecRule REQUEST_BODY "@detectXSS" "id:12345,deny,log"
 ```
 
 {{% notice note %}}
@@ -99,7 +99,7 @@ Returns true if the parameter string is found at the end of the input. Macro exp
 **Example:**
 
 ``` seclang
-# Detect request line that does not end with "HTTP/1.1" 
+# Detect request line that does not end with "HTTP/1.1"
 SecRule REQUEST_LINE "!@endsWith HTTP/1.1" "id:152"
 ```
 
@@ -112,7 +112,7 @@ Performs numerical comparison and returns true if the input value is equal to th
 **Example:**
 
 ``` seclang
-# Detect exactly 15 request headers 
+# Detect exactly 15 request headers
 SecRule &REQUEST_HEADERS_NAMES "@eq 15" "id:153"
 ```
 
@@ -135,7 +135,8 @@ For further information on ssdeep, visit its site: <http://ssdeep.sourceforge.ne
 **Example:**
 
 ``` seclang
-SecRule REQUEST_BODY "\@fuzzyHash /path/to/ssdeep/hashes.txt 6" "id:192372,log,deny"
+SecRule REQUEST_BODY "@rx \@fuzzyHash /path/to/ssdeep/hashes.txt 6" \
+    "id:192372,deny,log"
 ```
 
 ## ge
@@ -147,7 +148,7 @@ Performs numerical comparison and returns true if the input value is greater tha
 **Example:**
 
 ``` seclang
-# Detect 15 or more request headers 
+# Detect 15 or more request headers
 SecRule &REQUEST_HEADERS_NAMES "@ge 15" "id:154"
 ```
 
@@ -166,14 +167,14 @@ Performs a geolocation lookup using the IP address in input against the geolocat
 **Example:** The geoLookup operator matches on success and is thus best used in combination with nolog,pass. If you wish to block on a failed lookup (which may be over the top, depending on how accurate the geolocation database is), the following example demonstrates how best to do it:
 
 ``` seclang
-# Configure geolocation database 
-SecGeoLookupDb /path/to/GeoLiteCity.dat 
-... 
-# Lookup IP address 
-SecRule REMOTE_ADDR "@geoLookup" "phase:1,id:155,nolog,pass"
+# Configure geolocation database
+SecGeoLookupDb /path/to/GeoLiteCity.dat
+...
+# Lookup IP address
+SecRule REMOTE_ADDR "@geoLookup" "id:155,phase:1,pass,nolog"
 
 # Block IP address for which geolocation failed
- SecRule &GEO "@eq 0" "phase:1,id:156,deny,msg:'Failed to lookup IP'"
+SecRule &GEO "@eq 0" "id:156,phase:1,deny,msg:'Failed to lookup IP'"
 ```
 
 See the GEO variable for an example and more information on various fields available.
@@ -187,11 +188,18 @@ Performs a local lookup of Google's Safe Browsing using URLs in input against th
 **Example:** The gsbLookup operator matches on success and is thus best used in combination with a block or redirect action. If you wish to block on successful lookups, the following example demonstrates how best to do it:
 
 ``` seclang
-# Configure Google Safe Browsing database 
-SecGsbLookupDb /path/to/GsbMalware.dat 
-... 
+# Configure Google Safe Browsing database
+SecGsbLookupDb /path/to/GsbMalware.dat
+...
 # Check response bodies for malicious links
-SecRule RESPONSE_BODY "@gsbLookup =\"https?\:\/\/(.*?)\"" "phase:4,id:157,capture,log,block,msg:'Bad url detected in RESPONSE_BODY (Google Safe Browsing Check)',logdata:'http://www.google.com/safebrowsing/diagnostic?site=%{tx.0}'"
+SecRule RESPONSE_BODY "@gsbLookup =\"https?\:\/\/(.*?)\"" \
+    "id:157,\
+    phase:4,\
+    block,\
+    capture,\
+    log,\
+    msg:'Bad url detected in RESPONSE_BODY (Google Safe Browsing Check)',\
+    logdata:'http://www.google.com/safebrowsing/diagnostic?site=%{tx.0}'"
 ```
 
 {{% notice note %}}
@@ -209,7 +217,7 @@ Performs numerical comparison and returns true if the input value is greater tha
 **Example:**
 
 ``` seclang
-# Detect more than 15 headers in a request 
+# Detect more than 15 headers in a request
 SecRule &REQUEST_HEADERS_NAMES "@gt 15" "id:158"
 ```
 
@@ -276,7 +284,7 @@ print "$output\n";
 **Example:** Using the runav.pl script:
 
 ``` seclang
-# Execute external program to validate uploaded files 
+# Execute external program to validate uploaded files
 SecRule FILES_TMPNAMES "@inspectFile /path/to/util/runav.pl" "id:159"
 ```
 
@@ -402,7 +410,7 @@ Performs numerical comparison and returns true if the input value is less than o
 **Example**:
 
 ``` seclang
-# Detect 15 or fewer headers in a request 
+# Detect 15 or fewer headers in a request
 SecRule &REQUEST_HEADERS_NAMES "@le 15" "id:164"
 ```
 
@@ -421,7 +429,7 @@ Performs numerical comparison and returns true if the input value is less than t
 **Example:**
 
 ``` seclang
-# Detect fewer than 15 headers in a request 
+# Detect fewer than 15 headers in a request
 SecRule &REQUEST_HEADERS_NAMES "@lt 15" "id:165"
 ```
 
@@ -446,8 +454,9 @@ Performs a case-insensitive match of the provided phrases against the desired in
 **Example:**
 
 ``` seclang
-# Detect suspicious client by looking at the user agent identification 
-SecRule REQUEST_HEADERS:User-Agent "@pm WebZIP WebCopier Webster WebStripper ... SiteSnagger ProWebWalker CheeseBot" "id:166"
+# Detect suspicious client by looking at the user agent identification
+SecRule REQUEST_HEADERS:User-Agent "@pm WebZIP WebCopier Webster WebStripper ... SiteSnagger ProWebWalker CheeseBot" \
+    "id:166"
 ```
 
 {{% notice note %}}
@@ -485,10 +494,11 @@ This operator is the same as @pm, except that it takes a list of files as argume
 **Example:**
 
 ``` seclang
-# Detect suspicious user agents using the keywords in 
-# the files /path/to/blacklist1 and blacklist2 (the latter 
-# must be placed in the same folder as the configuration file) 
-SecRule REQUEST_HEADERS:User-Agent "@pmFromFile /path/to/blacklist1 blacklist2" "id:167"
+# Detect suspicious user agents using the keywords in
+# the files /path/to/blacklist1 and blacklist2 (the latter
+# must be placed in the same folder as the configuration file)
+SecRule REQUEST_HEADERS:User-Agent "@pmFromFile /path/to/blacklist1 blacklist2" \
+    "id:167"
 ```
 
 Notes:
@@ -499,16 +509,17 @@ Notes:
 4.  Because this operator does not check for boundaries when matching, false positives are possible in some cases. For example, if you want to use @pm for IP address matching, the phrase 1.2.3.4 will potentially match more than one IP address (e.g., it will also match 1.2.3.40 or 1.2.3.41). To avoid the false positives, you can use your own boundaries in phrases. For example, use /1.2.3.4/ instead of just 1.2.3.4. Then, in your rules, also add the boundaries where appropriate. You will find a complete example in the example.
 
 ``` seclang
-# Prepare custom REMOTE_ADDR variable 
-SecAction "phase:1,id:168,nolog,pass,setvar:tx.REMOTE_ADDR=/%{REMOTE_ADDR}/"
+# Prepare custom REMOTE_ADDR variable
+SecAction "id:168,phase:1,pass,nolog,setvar:tx.REMOTE_ADDR=/%{REMOTE_ADDR}/"
 
-# Check if REMOTE_ADDR is blacklisted 
-SecRule TX:REMOTE_ADDR "@pmFromFile blacklist.txt" "phase:1,id:169,deny,msg:'Blacklisted IP address'" 
+# Check if REMOTE_ADDR is blacklisted
+SecRule TX:REMOTE_ADDR "@pmFromFile blacklist.txt" \
+    "id:169,phase:1,deny,msg:'Blacklisted IP address'"
 ```
 
 The file blacklist.txt may contain:
 
-``` seclang
+``` text
 # ip-blacklist.txt contents:
 # NOTE: All IPs must be prefixed/suffixed with "/" as the rules
 #   will add in this character as a boundary to ensure
@@ -551,8 +562,25 @@ Looks up the input value in the RBL (real-time block list) given as parameter. T
 **Example:**
 
 ``` seclang
-SecRule REMOTE_ADDR "@rbl sbl-xbl.spamhaus.org" "phase:1,id:171,t:none,pass,nolog,auditlog,msg:'RBL Match for SPAM Source',tag:'AUTOMATION/MALICIOUS',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.automation_score=+%{tx.warning_anomaly_score},setvar:tx.anomaly_score=+%{tx.warning_anomaly_score}, \
-setvar:tx.%{rule.id}-AUTOMATION/MALICIOUS-%{matched_var_name}=%{matched_var},setvar:ip.spammer=1,expirevar:ip.spammer=86400,setvar:ip.previous_rbl_check=1,expirevar:ip.previous_rbl_check=86400,skipAfter:END_RBL_CHECK"
+SecRule REMOTE_ADDR "@rbl sbl-xbl.spamhaus.org" \
+    "id:171,\
+    phase:1,\
+    pass,\
+    t:none,\
+    nolog,\
+    auditlog,\
+    msg:'RBL Match for SPAM Source',\
+    tag:'AUTOMATION/MALICIOUS',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.automation_score=+%{tx.warning_anomaly_score},\
+    setvar:tx.anomaly_score=+%{tx.warning_anomaly_score},\
+    setvar:tx.%{rule.id}-AUTOMATION/MALICIOUS-%{matched_var_name}=%{matched_var},\
+    setvar:ip.spammer=1,\
+    setvar:ip.previous_rbl_check=1,\
+    expirevar:ip.spammer=86400,\
+    expirevar:ip.previous_rbl_check=86400,\
+    skipAfter:END_RBL_CHECK"
 ```
 
 {{% notice note %}}
@@ -583,7 +611,8 @@ Performs regular expression data substitution when applied to either the STREAM_
 
 ``` seclang
 SecStreamOutBodyInspection On
-SecRule STREAM_OUTPUT_BODY "@rsub s/<!--.*?-->/ /" "phase:4,id:172,t:none,nolog,pass"
+SecRule STREAM_OUTPUT_BODY "@rsub s/<!--.*?-->/ /" \
+    "id:172,phase:4,pass,t:none,nolog"
 ```
 
 {{% notice note %}}
@@ -603,14 +632,14 @@ Performs a regular expression match of the pattern provided as parameter. **This
 **Examples:**
 
 ``` seclang
-# Detect Nikto 
-SecRule REQUEST_HEADERS:User-Agent "@rx nikto" phase:1,id:173,t:lowercase
+# Detect Nikto
+SecRule REQUEST_HEADERS:User-Agent "@rx nikto" "id:173,phase:1,t:lowercase"
 
-# Detect Nikto with a case-insensitive pattern 
-SecRule REQUEST_HEADERS:User-Agent "@rx (?i)nikto" phase:1,id:174,t:none
+# Detect Nikto with a case-insensitive pattern
+SecRule REQUEST_HEADERS:User-Agent "@rx (?i)nikto" "id:174,phase:1,t:none"
 
-# Detect Nikto with a case-insensitive pattern 
-SecRule REQUEST_HEADERS:User-Agent "(?i)nikto" "id:175"
+# Detect Nikto with a case-insensitive pattern
+SecRule REQUEST_HEADERS:User-Agent "@rx (?i)nikto" "id:175"
 ```
 
 Regular expressions are handled by the PCRE library [1](http://www.pcre.org). ModSecurity compiles its regular expressions with the following settings:
@@ -645,7 +674,7 @@ Performs a global regular expression match of the pattern provided as parameter.
 
 ``` seclang
 # From a query argument 'aaa12bbb45ccc', both '12' and '45' will be returned as captures
-SecRule ARGS_GET "@rxGlobal [0-9]+" "phase:1,id:174,capture"
+SecRule ARGS_GET "@rxGlobal [0-9]+" "id:174,phase:1,capture"
 ```
 
 This operator is more expensive than @rx. Users are advised to use @rxGlobal only when the full captures are needed and prefer @rx in other cases. @rxGlobal exists only in libModSecurity v3 (added in 3.0.5); ModSecurity v2 has no equivalent.
@@ -659,7 +688,7 @@ Performs a string comparison and returns true if the parameter string is identic
 **Example:**
 
 ``` seclang
-# Detect request parameters "foo" that do not # contain "bar", exactly. 
+# Detect request parameters "foo" that do not # contain "bar", exactly.
 SecRule ARGS:foo "!@streq bar" "id:176"
 ```
 
@@ -672,7 +701,7 @@ Performs a string match of the provided word against the desired input value. In
 **Example:**
 
 ``` seclang
-# Detect suspicious client by looking at the user agent identification 
+# Detect suspicious client by looking at the user agent identification
 SecRule REQUEST_HEADERS:User-Agent "@strmatch WebZIP" "id:177"
 ```
 
@@ -691,7 +720,8 @@ Will force the rule to always return true. This is similar to SecAction however 
 **Example:**
 
 ``` seclang
-SecRule REMOTE_ADDR "@unconditionalMatch" "id:1000,phase:1,pass,nolog,t:hexEncode,setvar:TX.ip_hash=%{MATCHED_VAR}"
+SecRule REMOTE_ADDR "@unconditionalMatch" \
+    "id:1000,phase:1,pass,t:hexEncode,nolog,setvar:TX.ip_hash=%{MATCHED_VAR}"
 ```
 
 ## validateByteRange
@@ -703,16 +733,16 @@ Validates that the byte values used in input fall into the range specified by th
 **Example:**
 
 ``` seclang
-# Enforce very strict byte range for request parameters (only 
-# works for the applications that do not use the languages other 
-# than English). 
+# Enforce very strict byte range for request parameters (only
+# works for the applications that do not use the languages other
+# than English).
 SecRule ARGS "@validateByteRange 10, 13, 32-126" "id:178"
 ```
 
 The validateByteRange is most useful when used to detect the presence of NUL bytes, which don’t have a legitimate use, but which are often used as an evasion technique.
 
 ``` seclang
-# Do not allow NUL bytes 
+# Do not allow NUL bytes
 SecRule ARGS "@validateByteRange 1-255" "id:179"
 ```
 
@@ -737,11 +767,13 @@ Validates the XML DOM tree against the supplied DTD. The DOM tree must have been
 **Example:**
 
 ``` seclang
-# Parse the request bodies that contain XML 
-SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:180,nolog,pass,t:lowercase,ctl:requestBodyProcessor=XML"
+# Parse the request bodies that contain XML
+SecRule REQUEST_HEADERS:Content-Type "@rx ^text/xml$" \
+    "id:180,phase:1,pass,t:lowercase,nolog,ctl:requestBodyProcessor=XML"
 
-# Validate XML payload against DTD 
-SecRule XML "@validateDTD /path/to/xml.dtd" "phase:2,id:181,deny,msg:'Failed DTD validation'"
+# Validate XML payload against DTD
+SecRule XML "@validateDTD /path/to/xml.dtd" \
+    "id:181,phase:2,deny,msg:'Failed DTD validation'"
 ```
 
 **NOTE:** You must enable the `SecXmlExternalEntity` directive.
@@ -768,11 +800,13 @@ Validates the XML DOM tree against the supplied XML Schema. The DOM tree must ha
 **Example:**
 
 ``` seclang
-# Parse the request bodies that contain XML 
-SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:190,nolog,pass,t:lowercase,ctl:requestBodyProcessor=XML"
+# Parse the request bodies that contain XML
+SecRule REQUEST_HEADERS:Content-Type "@rx ^text/xml$" \
+    "id:190,phase:1,pass,t:lowercase,nolog,ctl:requestBodyProcessor=XML"
 
-# Validate XML payload against DTD 
-SecRule XML "@validateSchema /path/to/xml.xsd" "phase:2,id:191,deny,msg:'Failed DTD validation'"
+# Validate XML payload against DTD
+SecRule XML "@validateSchema /path/to/xml.xsd" \
+    "id:191,phase:2,deny,msg:'Failed DTD validation'"
 ```
 
 **NOTE:** You must enable the `SecXmlExternalEntity` directive.
@@ -786,7 +820,7 @@ Validates the URL-encoded characters in the provided input string.
 **Example:**
 
 ``` seclang
-# Validate URL-encoded characters in the request URI 
+# Validate URL-encoded characters in the request URI
 SecRule REQUEST_URI_RAW "@validateUrlEncoding" "id:192"
 ```
 
@@ -801,7 +835,7 @@ Check whether the input is a valid UTF-8 string.
 **Example:**
 
 ``` seclang
-# Make sure all request parameters contain only valid UTF-8 
+# Make sure all request parameters contain only valid UTF-8
 SecRule ARGS "@validateUtf8Encoding" "id:193"
 ```
 
@@ -824,9 +858,15 @@ Detects credit card numbers in input. This operator will first use the supplied 
 **Example:**
 
 ``` seclang
-# Detect credit card numbers in parameters and 
-# prevent them from being logged to audit log 
-SecRule ARGS "@verifyCC \d{13,16}" "phase:2,id:194,nolog,pass,msg:'Potential credit card number',sanitiseMatched"
+# Detect credit card numbers in parameters and
+# prevent them from being logged to audit log
+SecRule ARGS "@verifyCC \d{13,16}" \
+    "id:194,\
+    phase:2,\
+    pass,\
+    nolog,\
+    msg:'Potential credit card number',\
+    sanitiseMatched"
 ```
 
 {{% notice note %}}
@@ -844,9 +884,10 @@ Detects CPF numbers (Brazilian social number) in input. This operator will first
 **Example:**
 
 ``` seclang
-# Detect CPF numbers in parameters and 
-# prevent them from being logged to audit log 
-SecRule ARGS "@verifyCPF /^([0-9]{3}\.){2}[0-9]{3}-[0-9]{2}$/" "phase:2,id:195,nolog,pass,msg:'Potential CPF number',sanitiseMatched"
+# Detect CPF numbers in parameters and
+# prevent them from being logged to audit log
+SecRule ARGS "@verifyCPF /^([0-9]{3}\.){2}[0-9]{3}-[0-9]{2}$/" \
+    "id:195,phase:2,pass,nolog,msg:'Potential CPF number',sanitiseMatched"
 ```
 
 {{% notice note %}}
@@ -864,9 +905,15 @@ Detects US social security numbers (SSN) in input. This operator will first use 
 **Example:**
 
 ``` seclang
-# Detect social security numbers in parameters and 
-# prevent them from being logged to audit log 
-SecRule ARGS "@verifySSN \d{3}-?\d{2}-?\d{4}" "phase:2,id:196,nolog,pass,msg:'Potential social security number',sanitiseMatched"
+# Detect social security numbers in parameters and
+# prevent them from being logged to audit log
+SecRule ARGS "@verifySSN \d{3}-?\d{2}-?\d{4}" \
+    "id:196,\
+    phase:2,\
+    pass,\
+    nolog,\
+    msg:'Potential social security number',\
+    sanitiseMatched"
 ```
 
 **SSN Format**:
@@ -903,7 +950,8 @@ Detects Austrian social insurance numbers (Sozialversicherungsnummer, SVNR) in i
 ``` seclang
 # Detect Austrian social insurance numbers in parameters and
 # prevent them from being logged to audit log
-SecRule ARGS "@verifySVNR \d{4}\s?\d{6}" "phase:2,id:198,nolog,pass,msg:'Potential SVNR number',sanitiseMatched"
+SecRule ARGS "@verifySVNR \d{4}\s?\d{6}" \
+    "id:198,phase:2,pass,nolog,msg:'Potential SVNR number',sanitiseMatched"
 ```
 
 **verifySVNR checks:**
@@ -929,7 +977,7 @@ Returns true if the input value (the needle) is found anywhere within the @withi
 **Example:**
 
 ``` seclang
-# Detect request methods other than GET, POST and HEAD 
+# Detect request methods other than GET, POST and HEAD
 SecRule REQUEST_METHOD "!@within GET,POST,HEAD"
 ```
 
@@ -941,10 +989,7 @@ There are no delimiters for this operator, it is therefore often necessary to ar
 
 ``` seclang
 SecRule REQUEST_HEADERS_NAMES "@rx ^.*$" \
-"chain,\
-id:1,\
-block,\
-t:lowercase,\
-setvar:'tx.header_name=/%{tx.0}/'"
-   SecRule TX:header_name "@within /proxy/ /lock-token/ /content-range/ /translate/ /if/" "t:none"
+    "id:1,block,t:lowercase,setvar:'tx.header_name=/%{tx.0}/',chain"
+    SecRule TX:header_name "@within /proxy/ /lock-token/ /content-range/ /translate/ /if/" \
+        "t:none"
 ```

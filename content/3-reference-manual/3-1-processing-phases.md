@@ -18,8 +18,8 @@ In ModSecurity v2 the phases are hooks in the Apache request cycle. In libModSec
 In order to select the phase a rule executes during, use the phase action either directly in the rule or in the SecDefaultAction directive:
 
 ``` seclang
-SecDefaultAction "log,pass,phase:2"
-SecRule REQUEST_HEADERS:Host "!^$" "id:5,deny,phase:1"
+SecDefaultAction "phase:2,pass,log"
+SecRule REQUEST_HEADERS:Host "!@rx ^$" "id:5,phase:1,deny"
 ```
 
 The phase can be given by number or by name: `phase:request` is phase 2, `phase:response` is phase 4 and `phase:logging` is phase 5.

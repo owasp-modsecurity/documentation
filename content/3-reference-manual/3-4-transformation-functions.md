@@ -40,9 +40,10 @@ The remainder of this section documents the transformation functions currently a
 Decodes a Base64-encoded string.
 
 ``` seclang
-SecRule REQUEST_HEADERS:Authorization "^Basic ([a-zA-Z0-9]+=*)$" "phase:1,id:93,capture,chain,logdata:%{TX.1}"
-  SecRule TX:1 ^(\w+): t:base64Decode,capture,chain
-    SecRule TX:1 ^(admin|root|backup)$
+SecRule REQUEST_HEADERS:Authorization "@rx ^Basic ([a-zA-Z0-9]+=*)$" \
+    "id:93,phase:1,capture,logdata:%{TX.1},chain"
+    SecRule TX:1 "@rx ^(\w+):" "capture,t:base64Decode,chain"
+        SecRule TX:1 "@rx ^(admin|root|backup)$"
 ```
 
 The two engines treat malformed input differently. ModSecurity v2 (`apr_base64_decode`) decodes up to the first byte outside the Base64 alphabet and discards the rest. libModSecurity v3 (which uses a strict decoder) rejects the whole input and leaves the value unchanged when it contains a byte outside the alphabet, when its length is not a multiple of four (missing padding), or when data follows the padding; it does ignore line breaks (and spaces right before one or at the end of the value). It also stops at the first NUL byte in the input. Use base64DecodeExt when a forgiving decoder is wanted.
@@ -111,7 +112,8 @@ ModSecurity v2 registers this function as `cmdline`; because transformation name
 **Example Usage:**
 
 ``` seclang
-SecRule ARGS "(?:command(?:.com)?|cmd(?:.exe)?)(?:/.*)?/[ck]" "phase:2,id:94,t:none, t:cmdLine"
+SecRule ARGS "@rx (?:command(?:.com)?|cmd(?:.exe)?)(?:/.*)?/[ck]" \
+    "id:94,phase:2,t:none,t:cmdLine"
 ```
 
 ## compressWhitespace

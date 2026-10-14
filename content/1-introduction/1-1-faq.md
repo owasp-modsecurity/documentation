@@ -158,19 +158,22 @@ The most widely used generic rule set is the [OWASP CRS](https://coreruleset.org
 The first issue to realize is that the allow action is only applied to the current phase. This means that if a rule matches in a subsequent phase it may still take a disruptive action. The recommended rule configuration to allow a remote IP address to bypass ModSecurity rules is to do the following (where 192.168.1.100 should be substituted with the desired IP address):
 
 ``` seclang
-SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" "id:1000,phase:1,nolog,allow,ctl:ruleEngine=Off"
+SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" \
+    "id:1000,phase:1,allow,nolog,ctl:ruleEngine=Off"
 ```
 
 If you want to allow uninterrupted access to the remote IP address, however you still want to log rule alerts, then you can use this rule:
 
 ``` seclang
-SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" "id:1000,phase:1,nolog,allow,ctl:ruleEngine=DetectionOnly"
+SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" \
+    "id:1000,phase:1,allow,nolog,ctl:ruleEngine=DetectionOnly"
 ```
 
 If you want to disable both the rule and audit engines, then you can optionally add another ctl action:
 
 ``` seclang
-SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" "id:1000,phase:1,nolog,allow,ctl:ruleEngine=Off,ctl:auditEngine=Off"
+SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" \
+    "id:1000,phase:1,allow,nolog,ctl:ruleEngine=Off,ctl:auditEngine=Off"
 ```
 
 ### How do I handle False Positives and creating Custom Rules?

@@ -113,14 +113,14 @@ libModSecurity v3 reads the environment of its own process (plus anything writte
 
 ``` seclang
 # Set environment variable
-SecRule REQUEST_FILENAME "printenv" \
-"phase:2,id:15,pass,setenv:tag=suspicious"
+SecRule REQUEST_FILENAME "@rx printenv" \
+    "id:15,phase:2,pass,setenv:tag=suspicious"
 
 # Inspect environment variable
-SecRule ENV:tag "suspicious" "id:16"
+SecRule ENV:tag "@rx suspicious" "id:16"
 
 # Reading an environment variable from other Apache module (mod_ssl)
-SecRule TX:ANOMALY_SCORE "@gt 0" "phase:5,id:16,msg:'%{env.ssl_cipher}'"
+SecRule TX:ANOMALY_SCORE "@gt 0" "id:16,phase:5,msg:'%{env.ssl_cipher}'"
 ```
 
 {{% notice note %}}
@@ -258,8 +258,8 @@ Example:
 ``` seclang
 SecGeoLookupDb /usr/local/geo/data/GeoLiteCity.dat
 ...
-SecRule REMOTE_ADDR "@geoLookup" "chain,id:22,drop,msg:'Non-GB IP address'"
-SecRule GEO:COUNTRY_CODE "!@streq GB"
+SecRule REMOTE_ADDR "@geoLookup" "id:22,drop,msg:'Non-GB IP address',chain"
+    SecRule GEO:COUNTRY_CODE "!@streq GB"
 ```
 
 With libModSecurity v3 (MaxMind GeoLite2 database; a build that uses the legacy GeoIP library instead fills the full field list above, while the MaxMind lookup only sets COUNTRY_CODE, COUNTRY_NAME, COUNTRY_CONTINENT, CITY, POSTAL_CODE, LATITUDE and LONGITUDE):
@@ -267,8 +267,8 @@ With libModSecurity v3 (MaxMind GeoLite2 database; a build that uses the legacy 
 ``` seclang
 SecGeoLookupDB /usr/share/GeoIP/GeoLite2-Country.mmdb
 ...
-SecRule REMOTE_ADDR "@geoLookup" "chain,id:22,drop,msg:'Non-GB IP address'"
-SecRule GEO:COUNTRY_CODE "!@streq GB" ""
+SecRule REMOTE_ADDR "@geoLookup" "id:22,drop,msg:'Non-GB IP address',chain"
+    SecRule GEO:COUNTRY_CODE "!@streq GB" ""
 ```
 
 ## GLOBAL
@@ -280,8 +280,9 @@ Persistent collection shared by all transactions, in the same configuration name
 libModSecurity v3 keeps GLOBAL, IP, RESOURCE, SESSION and USER in memory, per process, by default: the data is not shared between worker processes and is lost on restart. A build configured with --with-lmdb stores them in an LMDB database (./modsec-shared-collections in the working directory) instead. SecDataDir is rejected by the v3 parser, SecCollectionTimeout is not supported, and expirevar is the only expiry mechanism.
 
 ``` seclang
-SecAction "phase:1,id:91,nolog,pass,initcol:global=global"
-SecRule REQUEST_URI "^/login" "phase:1,id:92,nolog,pass,setvar:global.login_attempts=+1"
+SecAction "id:91,phase:1,pass,nolog,initcol:global=global"
+SecRule REQUEST_URI "@rx ^/login" \
+    "id:92,phase:1,pass,nolog,setvar:global.login_attempts=+1"
 ```
 
 ## HIGHEST_SEVERITY
@@ -315,9 +316,10 @@ The best way to use this variable is as in the example below:
 Persistent collection keyed by a client address, typically initialized with the initcol action using REMOTE_ADDR. It is commonly used to track per-client state (for example, anomaly scores or request rates) across transactions. In ModSecurity v2 a selector is mandatory (IP:name or IP:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` seclang
-SecAction "phase:1,id:93,nolog,pass,initcol:ip=%{REMOTE_ADDR}"
-SecRule ARGS attack "phase:2,id:94,nolog,pass,setvar:ip.score=+5,expirevar:ip.score=3600"
-SecRule IP:score "@gt 20" "phase:2,id:95,deny"
+SecAction "id:93,phase:1,pass,nolog,initcol:ip=%{REMOTE_ADDR}"
+SecRule ARGS "@rx attack" \
+    "id:94,phase:2,pass,nolog,setvar:ip.score=+5,expirevar:ip.score=3600"
+SecRule IP:score "@gt 20" "id:95,phase:2,deny"
 ```
 
 ## MATCHED_VAR
@@ -327,8 +329,8 @@ SecRule IP:score "@gt 20" "phase:2,id:95,deny"
 This variable holds the value of the most-recently matched variable. It is similar to the TX:0, but it is automatically supported by all operators and there is no need to specify the capture action.
 
 ``` seclang
-SecRule ARGS pattern chain,deny,id:25
-  SecRule MATCHED_VAR "further scrutiny"
+SecRule ARGS "@rx pattern" "id:25,deny,chain"
+    SecRule MATCHED_VAR "@rx further scrutiny"
 ```
 
 {{% notice note %}}
@@ -344,8 +346,8 @@ Be aware that this variable holds data for the ***last*** operator match. This m
 Similar to MATCHED_VAR except that it is a collection of ***all matches*** for the current operator check.
 
 ``` seclang
-SecRule ARGS pattern "chain,deny,id:26"
-  SecRule MATCHED_VARS "@eq ARGS:param"
+SecRule ARGS "@rx pattern" "id:26,deny,chain"
+    SecRule MATCHED_VARS "@eq ARGS:param"
 ```
 
 ## MATCHED_VAR_NAME
@@ -355,8 +357,8 @@ SecRule ARGS pattern "chain,deny,id:26"
 This variable holds the full name of the variable that was matched against.
 
 ``` seclang
-SecRule ARGS pattern "chain,deny,id:27"
-  SecRule MATCHED_VAR_NAME "@eq ARGS:param"
+SecRule ARGS "@rx pattern" "id:27,deny,chain"
+    SecRule MATCHED_VAR_NAME "@eq ARGS:param"
 ```
 
 {{% notice note %}}
@@ -372,8 +374,8 @@ Be aware that this variable holds data for the ***last*** operator match. This m
 Similar to MATCHED_VAR_NAME except that it is a collection of ***all matches*** for the current operator check.
 
 ``` seclang
-SecRule ARGS pattern "chain,deny,id:28"
-  SecRule MATCHED_VARS_NAMES "@eq ARGS:param"
+SecRule ARGS "@rx pattern" "id:28,deny,chain"
+    SecRule MATCHED_VARS_NAMES "@eq ARGS:param"
 ```
 
 ## MODSEC_BUILD
@@ -383,14 +385,14 @@ SecRule ARGS pattern "chain,deny,id:28"
 This variable holds the ModSecurity build number. This variable is intended to be used to check the build number prior to using a feature that is available only in a certain build. Example:
 
 ``` seclang
-SecRule MODSEC_BUILD "!@ge 02050102" "skipAfter:12345,id:29"
+SecRule MODSEC_BUILD "!@ge 02050102" "id:29,skipAfter:12345"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
 
 libModSecurity v3 build numbers follow the same scheme: two digits each for the major, minor and patch level, followed by the three-digit tag number 100 (for example 030017100 for 3.0.17):
 
 ``` seclang
-SecRule MODSEC_BUILD "!@ge 030017100" "skipAfter:12345,id:29"
+SecRule MODSEC_BUILD "!@ge 030017100" "id:29,skipAfter:12345"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
 
@@ -542,21 +544,12 @@ The best way to use this variable is as in the example below:
 
 ``` seclang
 SecRule MULTIPART_STRICT_ERROR "!@eq 0" \
-"phase:2,id:30,t:none,log,deny,msg:'Multipart request body \
-failed strict validation: \
-PE %{REQBODY_ERROR}, \
-BQ %{MULTIPART_BOUNDARY_QUOTED}, \
-BW %{MULTIPART_BOUNDARY_WHITESPACE}, \
-DB %{MULTIPART_DATA_BEFORE}, \
-DA %{MULTIPART_DATA_AFTER}, \
-DH %{MULTIPART_DUPLICATE_PART_HEADER}, \
-HF %{MULTIPART_HEADER_FOLDING}, \
-LF %{MULTIPART_LF_LINE}, \
-SM %{MULTIPART_MISSING_SEMICOLON}, \
-IQ %{MULTIPART_INVALID_QUOTING}, \
-IP %{MULTIPART_INVALID_PART}, \
-IH %{MULTIPART_INVALID_HEADER_FOLDING}, \
-FE %{MULTIPART_FILE_LIMIT_EXCEEDED}'"
+    "id:30,\
+    phase:2,\
+    deny,\
+    t:none,\
+    log,\
+    msg:'Multipart request body failed strict validation: PE %{REQBODY_ERROR}, BQ %{MULTIPART_BOUNDARY_QUOTED}, BW %{MULTIPART_BOUNDARY_WHITESPACE}, DB %{MULTIPART_DATA_BEFORE}, DA %{MULTIPART_DATA_AFTER}, DH %{MULTIPART_DUPLICATE_PART_HEADER}, HF %{MULTIPART_HEADER_FOLDING}, LF %{MULTIPART_LF_LINE}, SM %{MULTIPART_MISSING_SEMICOLON}, IQ %{MULTIPART_INVALID_QUOTING}, IP %{MULTIPART_INVALID_PART}, IH %{MULTIPART_INVALID_HEADER_FOLDING}, FE %{MULTIPART_FILE_LIMIT_EXCEEDED}'"
 ```
 
 {{% notice note %}}
@@ -577,7 +570,12 @@ The best way to use this variable is as in the example below:
 
 ``` seclang
 SecRule MULTIPART_UNMATCHED_BOUNDARY "!@eq 0" \
-"phase:2,id:31,t:none,log,deny,msg:'Multipart parser detected a possible unmatched boundary.'"
+    "id:31,\
+    phase:2,\
+    deny,\
+    t:none,\
+    log,\
+    msg:'Multipart parser detected a possible unmatched boundary.'"
 ```
 
 Change the rule from blocking to logging-only if many false positives are encountered.
@@ -670,13 +668,26 @@ PERF_RULES is a collection, that is populated with the rules hitting the perform
 SecRulePerfTime            100
 
 SecRule FILES_TMPNAMES "@inspectFile /path/to/util/runav.pl" \
-  "phase:2,id:10001,deny,log,msg:'Virus scan detected an error.'"
+    "id:10001,phase:2,deny,log,msg:'Virus scan detected an error.'"
 
-SecRule   &PERF_RULES "@eq 0"    "phase:5,id:95000,\
-  pass,log,msg:'All rules performed below processing time limit.'"
-SecRule   PERF_RULES  "@ge 1000" "phase:5,id:95001,pass,log,\
-  msg:'Rule %{MATCHED_VAR_NAME} spent at least 1000 usec.'"
-SecAction "phase:5,id:95002,pass,log, msg:'File inspection took %{PERF_RULES.10001} usec.'"
+SecRule &PERF_RULES "@eq 0" \
+    "id:95000,\
+    phase:5,\
+    pass,\
+    log,\
+    msg:'All rules performed below processing time limit.'"
+SecRule PERF_RULES "@ge 1000" \
+    "id:95001,\
+    phase:5,\
+    pass,\
+    log,\
+    msg:'Rule %{MATCHED_VAR_NAME} spent at least 1000 usec.'"
+SecAction \
+    "id:95002,\
+    phase:5,\
+    pass,\
+    log,\
+    msg:'File inspection took %{PERF_RULES.10001} usec.'"
 ```
 
 The rule with id 10001 defines an external file inspection rule. The rule with id 95000 checks the size of the PERF_RULES collection. If the collection is empty, it writes a note in the logfile. Rule 95001 is executed for every item in the PERF_RULES collection. Every item is thus being checked against the limit of 1000 microseconds. If the rule spent at least that amount of time, then a note containing the rule id is being written to the logfile. The final rule 95002 notes the time spent in rule 10001 (the virus inspection).
@@ -778,8 +789,8 @@ It is more common, however, simply to output the content in a log line, as in ru
 Contains the name of the currently used request body processor. If set, the possible values are URLENCODED, MULTIPART, XML, and JSON; it is an empty string when no processor is in use. Both engines select URLENCODED and MULTIPART automatically from the Content-Type; XML and JSON must be selected with ctl:requestBodyProcessor.
 
 ``` seclang
-SecRule REQBODY_PROCESSOR "^XML$" "chain,id:41"
-  SecRule XML "@validateDTD /opt/apache-frontend/conf/xml.dtd"
+SecRule REQBODY_PROCESSOR "@rx ^XML$" "id:41,chain"
+    SecRule XML "@validateDTD /opt/apache-frontend/conf/xml.dtd"
 ```
 
 ## REQBODY_PROCESSOR_ERROR
@@ -887,7 +898,8 @@ This variable holds the complete request line sent to the server (including the 
 ``` seclang
 # Allow only POST, GET and HEAD request methods, as well as only
 # the valid protocol versions
-SecRule REQUEST_LINE "!(^((?:(?:POS|GE)T|HEAD))|HTTP/(0\.9|1\.0|1\.1)$)" "phase:1,id:49,log,block,t:none"
+SecRule REQUEST_LINE "!@rx (^((?:(?:POS|GE)T|HEAD))|HTTP/(0\.9|1\.0|1\.1)$)" \
+    "id:49,phase:1,block,t:none,log"
 ```
 
 ## REQUEST_METHOD
@@ -941,8 +953,9 @@ Please note that anti-evasion transformations are not used on REQUEST_URI_RAW, w
 Persistent collection keyed by a resource identifier (typically the request path), within the namespace set by SecWebAppId. It is initialized with the setrsc action (ModSecurity 2.7.0 and later) or with initcol, and can be used to keep per-resource state across transactions. In ModSecurity v2 a selector is mandatory (RESOURCE:name or RESOURCE:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` seclang
-SecAction "phase:1,id:96,nolog,pass,setrsc:%{REQUEST_FILENAME}"
-SecRule RESPONSE_STATUS "^5" "phase:3,id:97,nolog,pass,setvar:resource.errors=+1"
+SecAction "id:96,phase:1,pass,nolog,setrsc:%{REQUEST_FILENAME}"
+SecRule RESPONSE_STATUS "@rx ^5" \
+    "id:97,phase:3,pass,nolog,setvar:resource.errors=+1"
 ```
 
 ## RESPONSE_BODY
@@ -1081,7 +1094,7 @@ This variable holds the script’s permissions mode data as four hexadecimal dig
 
 ``` seclang
 # Do not allow scripts that can be written to by everyone
-SecRule SCRIPT_MODE "[2367]$" "id:64"
+SecRule SCRIPT_MODE "@rx [2367]$" "id:64"
 ```
 
 {{% notice note %}}
@@ -1099,7 +1112,7 @@ This variable holds the numerical identifier of the owner of the script.
 ``` seclang
 # Do not run any scripts that are owned
 # by Apache (Apache's user id is 46)
-SecRule SCRIPT_UID "!^46$" "id:65"
+SecRule SCRIPT_UID "!@rx ^46$" "id:65"
 ```
 
 {{% notice note %}}
@@ -1115,8 +1128,8 @@ Not available in proxy mode.
 This variable holds the username of the owner of the script.
 
 ``` seclang
-# Do not run any scripts owned by Apache SecRule
-SCRIPT_USERNAME "^apache$" "id:66"
+# Do not run any scripts owned by Apache
+SecRule SCRIPT_USERNAME "@rx ^apache$" "id:66"
 ```
 
 {{% notice note %}}
@@ -1165,16 +1178,24 @@ The following example shows how to initialize SESSION using setsid, how to use s
 
 ``` seclang
 # Initialize session storage
-SecRule REQUEST_COOKIES:PHPSESSID !^$ "phase:2,id:70,nolog,pass,setsid:%{REQUEST_COOKIES.PHPSESSID}"
+SecRule REQUEST_COOKIES:PHPSESSID "!@rx ^$" \
+    "id:70,phase:2,pass,nolog,setsid:%{REQUEST_COOKIES.PHPSESSID}"
 
 # Increment session score on attack
-SecRule REQUEST_URI "^/cgi-bin/finger$" "phase:2,id:71,t:none,t:lowercase,t:normalizePath,pass,setvar:SESSION.score=+10"
+SecRule REQUEST_URI "@rx ^/cgi-bin/finger$" \
+    "id:71,\
+    phase:2,\
+    pass,\
+    t:none,\
+    t:lowercase,\
+    t:normalizePath,\
+    setvar:SESSION.score=+10"
 
 # Detect too many attacks in a session
-SecRule SESSION:score "@gt 50" "phase:2,id:72,pass,setvar:SESSION.blocked=1"
+SecRule SESSION:score "@gt 50" "id:72,phase:2,pass,setvar:SESSION.blocked=1"
 
 # Enforce session block
-SecRule SESSION:blocked "@eq 1" "phase:2,id:73,deny,status:403"
+SecRule SESSION:blocked "@eq 1" "id:73,phase:2,deny,status:403"
 ```
 
 ## SESSIONID
@@ -1197,7 +1218,8 @@ This variable holds the response status line generated by the server, that is th
 
 ``` seclang
 # Generate an alert when the application generates 500 errors.
-SecRule STATUS_LINE "@contains 500" "phase:3,id:49,log,pass,logdata:'Application error detected!,t:none"
+SecRule STATUS_LINE "@contains 500" \
+    "id:49,phase:3,pass,log,logdata:'Application error detected!,t:none"
 ```
 
 ## STREAM_INPUT_BODY
@@ -1325,10 +1347,10 @@ This is the transient transaction collection, which is used to store pieces of d
 
 ``` seclang
 # Increment transaction attack score on attack
-SecRule ARGS attack "phase:2,id:82,nolog,pass,setvar:TX.score=+5"
+SecRule ARGS "@rx attack" "id:82,phase:2,pass,nolog,setvar:TX.score=+5"
 
 # Block the transactions whose scores are too high
-SecRule TX:SCORE "@gt 20" "phase:2,id:83,log,deny"
+SecRule TX:SCORE "@gt 20" "id:83,phase:2,deny,log"
 ```
 
 Some variable names in the TX collection are reserved and cannot be used:
@@ -1359,9 +1381,9 @@ This variable is created when an invalid URL encoding is encountered during the 
 Persistent collection keyed by the user identifier set with setuid (see USERID). It must be initialized with setuid or initcol before it can be used. In ModSecurity v2 a selector is mandatory (USER:name or USER:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
 ``` seclang
-SecAction "phase:1,id:98,nolog,pass,setuid:%{REMOTE_USER}"
-SecRule ARGS attack "phase:2,id:99,nolog,pass,setvar:user.score=+5"
-SecRule USER:score "@gt 20" "phase:2,id:100,deny"
+SecAction "id:98,phase:1,pass,nolog,setuid:%{REMOTE_USER}"
+SecRule ARGS "@rx attack" "id:99,phase:2,pass,nolog,setvar:user.score=+5"
+SecRule USER:score "@gt 20" "id:100,phase:2,deny"
 ```
 
 ## USERID
@@ -1372,10 +1394,10 @@ This variable contains the value set with setuid.
 
 ``` seclang
 # Initialize user tracking
-SecAction "nolog,id:84,pass,setuid:%{REMOTE_USER}"
+SecAction "id:84,pass,nolog,setuid:%{REMOTE_USER}"
 
 # Is the current user the administrator?
-SecRule USERID "admin" "id:85"
+SecRule USERID "@rx admin" "id:85"
 ```
 
 ## USERAGENT_IP
@@ -1409,12 +1431,14 @@ Special collection used to interact with the XML parser. It can be used standalo
 libModSecurity v3 supports it only when built with libxml2; without it the variable parses but never yields a value. XPath selection works the same way (XML:/xpath, with namespaces registered through the xmlns action), and a bare XML yields a placeholder value for the validation operators.
 
 ``` seclang
-SecDefaultAction log,deny,status:403,phase:2,id:90
-SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:87,t:lowercase,nolog,pass,ctl:requestBodyProcessor=XML"
-SecRule REQBODY_PROCESSOR "!^XML$" skipAfter:12345,id:88
+SecDefaultAction "id:90,phase:2,deny,status:403,log"
+SecRule REQUEST_HEADERS:Content-Type "@rx ^text/xml$" \
+    "id:87,phase:1,pass,t:lowercase,nolog,ctl:requestBodyProcessor=XML"
+SecRule REQBODY_PROCESSOR "!@rx ^XML$" "id:88,skipAfter:12345"
 
-SecRule XML:/employees/employee/name/text() Fred "id:89"
-SecRule XML:/xq:employees/employee/name/text() Fred "id:12345,xmlns:xq=http://www.example.com/employees"
+SecRule XML:/employees/employee/name/text() "@rx Fred" "id:89"
+SecRule XML:/xq:employees/employee/name/text() "@rx Fred" \
+    "id:12345,xmlns:xq=http://www.example.com/employees"
 ```
 
 The first XPath expression does not use namespaces. It would match against payload such as this one:

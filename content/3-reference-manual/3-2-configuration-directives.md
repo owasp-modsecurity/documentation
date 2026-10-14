@@ -35,7 +35,7 @@ Unconditionally processes the action list it receives as the first and only para
 This directive is commonly used to set variables and initialize persistent collections using the initcol action. For example:
 
 ``` seclang
-SecAction nolog,phase:1,initcol:RESOURCE=%{REQUEST_FILENAME}
+SecAction "phase:1,nolog,initcol:RESOURCE=%{REQUEST_FILENAME}"
 ```
 
 ## SecArgumentSeparator
@@ -61,7 +61,14 @@ In ModSecurity v2 the default is 1000. libModSecurity v3 applies no limit unless
 When using this setting, it is recommended to accompany it with a rule that will test for that same integer value and deny the request if it is reached, like rule 200007 in modsecurity.conf-recommended:
 
 ``` seclang
-SecRule &ARGS "@ge 1000" "id:'200007', phase:2,t:none,log,deny,status:400,msg:'Failed to fully parse request body due to large argument count'"
+SecRule &ARGS "@ge 1000" \
+    "id:'200007',\
+    phase:2,\
+    deny,\
+    status:400,\
+    t:none,\
+    log,\
+    msg:'Failed to fully parse request body due to large argument count'"
 ```
 
 Without such a matching rule, an attacker could potentially evade detection by placing the attack payload in a parameter occurring beyond the limit.
@@ -91,9 +98,9 @@ The following example demonstrates how SecAuditEngine is used:
 ``` seclang
 SecAuditEngine RelevantOnly
 SecAuditLog logs/audit/audit.log
-SecAuditLogParts ABCFHZ 
-SecAuditLogType concurrent 
-SecAuditLogStorageDir logs/audit 
+SecAuditLogParts ABCFHZ
+SecAuditLogType concurrent
+SecAuditLogStorageDir logs/audit
 SecAuditLogRelevantStatus ^(?:5|4(?!04))
 ```
 
@@ -616,10 +623,39 @@ The value can be either a number or a text string. The SecMarker directive is av
 ``` seclang
 SecMarker BEGIN_HOST_CHECK
 
-        SecRule &REQUEST_HEADERS:Host "@eq 0" \
-                "skipAfter:END_HOST_CHECK,phase:2,rev:'2.1.1',t:none,block,msg:'Request Missing a Host Header',id:'960008',tag:'PROTOCOL_VIOLATION/MISSING_HEADER_HOST',tag:'WASCTC/WASC-21',tag:'OWASP_TOP_10/A7',tag:'PCI/6.5.10',severity:'5',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.notice_anomaly_score},setvar:tx.protocol_violation_score=+%{tx.notice_anomaly_score},setvar:tx.%{rule.id}-PROTOCOL_VIOLATION/MISSING_HEADER-%{matched_var_name}=%{matched_var}"
-        SecRule REQUEST_HEADERS:Host "^$" \
-                "phase:2,rev:'2.1.1',t:none,block,msg:'Request Missing a Host Header',id:'960008',tag:'PROTOCOL_VIOLATION/MISSING_HEADER_HOST',tag:'WASCTC/WASC-21',tag:'OWASP_TOP_10/A7',tag:'PCI/6.5.10',severity:'5',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.notice_anomaly_score},setvar:tx.protocol_violation_score=+%{tx.notice_anomaly_score},setvar:tx.%{rule.id}-PROTOCOL_VIOLATION/MISSING_HEADER-%{matched_var_name}=%{matched_var}"
+SecRule &REQUEST_HEADERS:Host "@eq 0" \
+    "id:'960008',\
+    phase:2,\
+    block,\
+    t:none,\
+    msg:'Request Missing a Host Header',\
+    tag:'PROTOCOL_VIOLATION/MISSING_HEADER_HOST',\
+    tag:'WASCTC/WASC-21',\
+    tag:'OWASP_TOP_10/A7',\
+    tag:'PCI/6.5.10',\
+    rev:'2.1.1',\
+    severity:'5',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.notice_anomaly_score},\
+    setvar:tx.protocol_violation_score=+%{tx.notice_anomaly_score},\
+    setvar:tx.%{rule.id}-PROTOCOL_VIOLATION/MISSING_HEADER-%{matched_var_name}=%{matched_var},\
+    skipAfter:END_HOST_CHECK"
+SecRule REQUEST_HEADERS:Host "@rx ^$" \
+    "id:'960008',\
+    phase:2,\
+    block,\
+    t:none,\
+    msg:'Request Missing a Host Header',\
+    tag:'PROTOCOL_VIOLATION/MISSING_HEADER_HOST',\
+    tag:'WASCTC/WASC-21',\
+    tag:'OWASP_TOP_10/A7',\
+    tag:'PCI/6.5.10',\
+    rev:'2.1.1',\
+    severity:'5',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.notice_anomaly_score},\
+    setvar:tx.protocol_violation_score=+%{tx.notice_anomaly_score},\
+    setvar:tx.%{rule.id}-PROTOCOL_VIOLATION/MISSING_HEADER-%{matched_var_name}=%{matched_var}"
 
 SecMarker END_HOST_CHECK
 ```
@@ -1161,14 +1197,23 @@ Updates the action list of the specified rule.
 This directive will overwrite the action list of the specified rule with the actions provided in the second parameter. It has two limitations: it cannot be used to change the ID or phase of a rule. Only the actions that can appear only once are overwritten. The actions that are allowed to appear multiple times in a list, will be appended to the end of the list.
 
 ``` seclang
-SecRule ARGS attack "phase:2,id:12345,t:lowercase,log,pass,msg:'Message text'"
+SecRule ARGS "@rx attack" \
+    "id:12345,phase:2,pass,t:lowercase,log,msg:'Message text'"
 SecRuleUpdateActionById 12345 "t:none,t:compressWhitespace,deny,status:403,msg:'New message text'"
 ```
 
 The effective resulting rule in the previous example will be as follows:
 
 ``` seclang
-SecRule ARGS attack "phase:2,id:12345,t:lowercase,t:none,t:compressWhitespace,deny,status:403,msg:'New Message text'"
+SecRule ARGS "@rx attack" \
+    "id:12345,\
+    phase:2,\
+    deny,\
+    status:403,\
+    t:lowercase,\
+    t:none,\
+    t:compressWhitespace,\
+    msg:'New Message text'"
 ```
 
 The addition of t:none will neutralize any previous transformation functions specified (t:lowercase, in the example).
@@ -1192,9 +1237,28 @@ This directive will append (or replace) variables to the current target list of 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetById 958895 !ARGS:email
 ```
@@ -1202,9 +1266,28 @@ SecRuleUpdateTargetById 958895 !ARGS:email
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 Note that is is also possible to use regular expressions in the target specification:
@@ -1218,9 +1301,28 @@ SecRuleUpdateTargetById 981172 "!REQUEST_COOKIES:/^appl1_.*/"
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetById 958895 REQUEST_URI REQUEST_FILENAME
 ```
@@ -1228,9 +1330,28 @@ SecRuleUpdateTargetById 958895 REQUEST_URI REQUEST_FILENAME
 The effective resulting rule in the previous example replaces the target in the begin of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 {{% notice note %}}
@@ -1263,9 +1384,28 @@ This directive will append (or replace) variables to the current target list of 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetByMsg "System Command Injection" !ARGS:email
 ```
@@ -1273,9 +1413,28 @@ SecRuleUpdateTargetByMsg "System Command Injection" !ARGS:email
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 **Explicitly Replacing Targets**
@@ -1283,9 +1442,28 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetByMsg "System Command Injection" REQUEST_URI REQUEST_FILENAME
 ```
@@ -1293,9 +1471,28 @@ SecRuleUpdateTargetByMsg "System Command Injection" REQUEST_URI REQUEST_FILENAME
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 {{% notice note %}}
@@ -1317,9 +1514,28 @@ This directive will append (or replace) variables to the current target list of 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetByTag "WASCTC/WASC-31" !ARGS:email
 ```
@@ -1327,9 +1543,28 @@ SecRuleUpdateTargetByTag "WASCTC/WASC-31" !ARGS:email
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 **Explicitly Replacing Targets**
@@ -1337,9 +1572,28 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
 ``` seclang
-SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}"
+SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}"
 
 SecRuleUpdateTargetByTag "WASCTC/WASC-31" REQUEST_URI REQUEST_FILENAME
 ```
@@ -1347,9 +1601,28 @@ SecRuleUpdateTargetByTag "WASCTC/WASC-31" REQUEST_URI REQUEST_FILENAME
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
 ``` seclang
-SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
-     "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
-{tx.0}""
+SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "@rx [\;\|\`]\W*?\bmail\b" \
+    "id:'958895',\
+    phase:2,\
+    block,\
+    capture,\
+    t:none,\
+    t:htmlEntityDecode,\
+    t:compressWhitespace,\
+    t:lowercase,\
+    msg:'System Command Injection',\
+    logdata:'%{TX.0}',\
+    tag:'WEB_ATTACK/COMMAND_INJECTION',\
+    tag:'WASCTC/WASC-31',\
+    tag:'OWASP_TOP_10/A1',\
+    tag:'PCI/6.5.2',\
+    ctl:auditLogParts=+E,\
+    rev:'2.1.1',\
+    severity:'2',\
+    setvar:'tx.msg=%{rule.msg}',\
+    setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},\
+    setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0}""
 ```
 
 {{% notice note %}}
