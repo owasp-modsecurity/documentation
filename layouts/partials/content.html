@@ -1,0 +1,14 @@
+{{- /* Overrides the theme's one-line content partial to color inline code
+       that is a complete SecLang directive (a Sec* directive followed by
+       arguments). Hugo has no render hook for code spans, so the rendered
+       content is post-processed: each such <code> span becomes a one-line
+       version of the seclang code block, on the same dark background so the
+       Monokai colors stay readable in both theme variants. */ -}}
+{{- $c := printf "%s" .Content -}}
+{{- range $m := findRE `<code>Sec[A-Za-z0-9]+\s+[^<]+</code>` $c | uniq -}}
+  {{- $inner := strings.TrimSuffix "</code>" (strings.TrimPrefix "<code>" $m) -}}
+  {{- $inner = replace $inner "&quot;" "&#34;" -}}
+  {{- $h := partial "seclang-highlight.html" (printf "<span>%s</span>" $inner) -}}
+  {{- $c = replace $c $m (printf `<code class="seclang" style="background-color:#272822;color:#f8f8f2;border-color:#272822">%s</code>` $h) -}}
+{{- end -}}
+{{- $c | safeHTML -}}
