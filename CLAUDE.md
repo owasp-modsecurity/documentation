@@ -18,6 +18,9 @@ Hugo + Relearn documentation site for OWASP ModSecurity (v2 and libModSecurity v
   lowercased entry names, e.g. `3-reference-manual/3-2-configuration-directives#secruleengine`.
 - Version metadata: `v2="2.7.0"` means "available in ModSecurity v2 since 2.7.0"; `v3` is
   `yes`, `no`, `tbi` (to be implemented) or a version string.
+- Code fences: rules and ModSecurity directives use ```` ``` seclang ```` (rendered by
+  `layouts/_default/_markup/render-codeblock-seclang.html`, a regex colorizer on top of Chroma's text lexer
+  since Chroma has no SecLang lexer); httpd config uses `apache`, log excerpts `text`, Lua scripts `lua`.
 - Callouts: `{{% notice note %}}…{{% /notice %}}` (also `warning`, `info`, `tip`).
 - Cross references: `{{% relref "3-reference-manual/3-5-actions#ctl" %}}` style links.
 - `<!-- TODO(v3-merge) -->` marks text auto-merged from the v3 wiki manual that still needs

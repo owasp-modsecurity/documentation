@@ -34,7 +34,7 @@ Unconditionally processes the action list it receives as the first and only para
 
 This directive is commonly used to set variables and initialize persistent collections using the initcol action. For example:
 
-``` apache
+``` seclang
 SecAction nolog,phase:1,initcol:RESOURCE=%{REQUEST_FILENAME}
 ```
 
@@ -60,7 +60,7 @@ In ModSecurity v2 the default is 1000. libModSecurity v3 applies no limit unless
 
 When using this setting, it is recommended to accompany it with a rule that will test for that same integer value and deny the request if it is reached, like rule 200007 in modsecurity.conf-recommended:
 
-``` apache
+``` seclang
 SecRule &ARGS "@ge 1000" "id:'200007', phase:2,t:none,log,deny,status:400,msg:'Failed to fully parse request body due to large argument count'"
 ```
 
@@ -88,7 +88,7 @@ If you need to change the audit log engine configuration on a per-transaction ba
 
 The following example demonstrates how SecAuditEngine is used:
 
-``` apache
+``` seclang
 SecAuditEngine RelevantOnly
 SecAuditLog logs/audit/audit.log
 SecAuditLogParts ABCFHZ 
@@ -105,7 +105,7 @@ Defines the path to the main audit log file (serial logging format), the concurr
 
 This file will be used to store the audit log entries if serial audit logging format is used. If concurrent audit logging format is used this file will be used as an index, and contain a record of all audit log files created. If you are planning to use concurrent audit logging to send your audit log data off to a remote server you will need to deploy the ModSecurity Log Collector (mlogc), like this:
 
-``` apache
+``` seclang
 SecAuditLog "|/path/to/mlogc /path/to/mlogc.conf"
 ```
 
@@ -135,7 +135,7 @@ The default mode for new audit log directories (0750) grants full access to the 
 
 Example:
 
-``` apache
+``` seclang
 SecAuditLogDirMode 02750
 ```
 
@@ -240,7 +240,7 @@ This parameter is only used when audit log format is set to native. Intended to 
 
 **Example:**
 
-``` apache
+``` seclang
 SecAuditEngine RelevantOnly
 SecAuditLog /dev/stdout
 SecAuditLogParts ABHZ
@@ -579,7 +579,7 @@ libModSecurity v3 rejects this directive with a configuration error, so a config
 
 Currently the only tool known to work with guardian logging is httpd-guardian, which is part of the Apache httpd tools project [1](http://apache-tools.cvs.sourceforge.net/viewvc/apache-tools/apache-tools/). The httpd-guardian tool is designed to defend against denial of service attacks. It uses the blacklist tool (from the same project) to interact with an iptables-based (on a Linux system) or pf-based (on a BSD system) firewall, dynamically blacklisting the offending IP addresses. It can also interact with SnortSam [2](http://www.snortsam.net). Assuming httpd-guardian is already configured (look into the source code for the detailed instructions), you only need to add one line to your Apache configuration to deploy it. The optional second parameter restricts guardian logging to requests for which the given environment variable is set (or, with the `!` prefix, not set), as with Apache's `CustomLog`:
 
-``` apache
+``` seclang
 SecGuardianLog |/path/to/httpd-guardian
 ```
 
@@ -613,7 +613,7 @@ Adds a fixed rule marker that can be used as a target in a skipAfter action. A S
 
 The value can be either a number or a text string. The SecMarker directive is available to allow you to choose the best way to implement a skip-over. Here is an example used from the Core Rule Set:
 
-``` apache
+``` seclang
 SecMarker BEGIN_HOST_CHECK
 
         SecRule &REQUEST_HEADERS:Host "@eq 0" \
@@ -740,7 +740,7 @@ This payload will generate value for `XML` target like this: `foo bar`.
 
 If you turn on this feature, the nodes will apear under `ARGS`:
 
-``` apache
+``` text
 Adding XML argument 'xml.root.level1.level2' with value 'foo'
 Adding XML argument 'xml.root.level1.level2' with value 'bar'
 ```
@@ -1078,7 +1078,7 @@ Although the software does not enforce including the 'id' action, including it i
 
 Example script:
 
-``` apache
+``` lua
 -- Your script must define the main entry
 -- point, as below.
 function main()
@@ -1114,7 +1114,7 @@ In this first example we were only retrieving one variable at the time. In this 
 
 Example showing use of m.getvars() to retrieve many variables at once:
 
-``` apache
+``` lua
 function main()
     -- Retrieve script parameters.
     local d = m.getvars("ARGS", { "lowercase", "htmlEntityDecode" } );
@@ -1160,14 +1160,14 @@ Updates the action list of the specified rule.
 
 This directive will overwrite the action list of the specified rule with the actions provided in the second parameter. It has two limitations: it cannot be used to change the ID or phase of a rule. Only the actions that can appear only once are overwritten. The actions that are allowed to appear multiple times in a list, will be appended to the end of the list.
 
-``` apache
+``` seclang
 SecRule ARGS attack "phase:2,id:12345,t:lowercase,log,pass,msg:'Message text'"
 SecRuleUpdateActionById 12345 "t:none,t:compressWhitespace,deny,status:403,msg:'New message text'"
 ```
 
 The effective resulting rule in the previous example will be as follows:
 
-``` apache
+``` seclang
 SecRule ARGS attack "phase:2,id:12345,t:lowercase,t:none,t:compressWhitespace,deny,status:403,msg:'New Message text'"
 ```
 
@@ -1191,7 +1191,7 @@ This directive will append (or replace) variables to the current target list of 
 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1201,7 +1201,7 @@ SecRuleUpdateTargetById 958895 !ARGS:email
 
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1209,7 +1209,7 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\
 
 Note that is is also possible to use regular expressions in the target specification:
 
-``` apache
+``` seclang
 SecRuleUpdateTargetById 981172 "!REQUEST_COOKIES:/^appl1_.*/"
 ```
 
@@ -1217,7 +1217,7 @@ SecRuleUpdateTargetById 981172 "!REQUEST_COOKIES:/^appl1_.*/"
 
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1227,7 +1227,7 @@ SecRuleUpdateTargetById 958895 REQUEST_URI REQUEST_FILENAME
 
 The effective resulting rule in the previous example replaces the target in the begin of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1243,7 +1243,7 @@ You could also do the same by using the ctl action with the ruleRemoveById direc
 
 libModSecurity v3 takes only a single rule ID (no ranges) and the target list; the third REPLACED_TARGET parameter is not supported. To replace a target in v3, negate the old one and add the new one in the same list, e.g. `SecRuleUpdateTargetById 958895 !REQUEST_FILENAME,REQUEST_URI`. If you want to use grouping in a regular expression target, you must enclose it in single quotes:
 
-``` apache
+``` seclang
 SecRuleUpdateTargetById 981172 "!REQUEST_COOKIES:/^appl1_.*/"
 SecRuleUpdateTargetById 981173 "!REQUEST_COOKIES:'/^(appl1_.*|foo_.*)/'"
 ```
@@ -1262,7 +1262,7 @@ This directive will append (or replace) variables to the current target list of 
 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1272,7 +1272,7 @@ SecRuleUpdateTargetByMsg "System Command Injection" !ARGS:email
 
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1282,7 +1282,7 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\
 
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1292,7 +1292,7 @@ SecRuleUpdateTargetByMsg "System Command Injection" REQUEST_URI REQUEST_FILENAME
 
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1316,7 +1316,7 @@ This directive will append (or replace) variables to the current target list of 
 
 This is useful for implementing exceptions where you want to externally update a target list to exclude inspection of specific variable(s).
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1326,7 +1326,7 @@ SecRuleUpdateTargetByTag "WASCTC/WASC-31" !ARGS:email
 
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1336,7 +1336,7 @@ SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/*|!ARGS:email "[\;\|\`]\W*?\bmail\
 
 You can also entirely replace the target list to something more appropriate for your environment. For example, lets say you want to inspect REQUEST_URI instead of REQUEST_FILENAME, you could do this:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}"
@@ -1346,7 +1346,7 @@ SecRuleUpdateTargetByTag "WASCTC/WASC-31" REQUEST_URI REQUEST_FILENAME
 
 The effective resulting rule in the previous example will append the target to the end of the variable list as follows:
 
-``` apache
+``` seclang
 SecRule REQUEST_URI|ARGS_NAMES|ARGS|XML:/* "[\;\|\`]\W*?\bmail\b" \
      "phase:2,rev:'2.1.1',capture,t:none,t:htmlEntityDecode,t:compressWhitespace,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'958895',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%
 {tx.0}""
@@ -1560,7 +1560,7 @@ In the two examples configurations shown, SecWebAppId is being used in conjuncti
 
 With libModSecurity v3 the same separation is achieved through the connector's configuration, for example nginx server blocks. The configured value is available in the WEBAPPID variable.
 
-``` apache
+``` nginx
 server {
     listen 80;
     server_name app1.example.com;

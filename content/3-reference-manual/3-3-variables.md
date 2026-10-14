@@ -111,7 +111,7 @@ Collection that provides access to environment variables set by ModSecurity (via
 
 libModSecurity v3 reads the environment of its own process (plus anything written there by setenv); the name is matched case-sensitively, a bare ENV returns every environment variable, and ENV:/regex/ is accepted by the parser but treated as a literal name.
 
-``` apache
+``` seclang
 # Set environment variable
 SecRule REQUEST_FILENAME "printenv" \
 "phase:2,id:15,pass,setenv:tag=suspicious"
@@ -255,7 +255,7 @@ Fields:
 
 Example:
 
-``` apache
+``` seclang
 SecGeoLookupDb /usr/local/geo/data/GeoLiteCity.dat
 ...
 SecRule REMOTE_ADDR "@geoLookup" "chain,id:22,drop,msg:'Non-GB IP address'"
@@ -264,7 +264,7 @@ SecRule GEO:COUNTRY_CODE "!@streq GB"
 
 With libModSecurity v3 (MaxMind GeoLite2 database; a build that uses the legacy GeoIP library instead fills the full field list above, while the MaxMind lookup only sets COUNTRY_CODE, COUNTRY_NAME, COUNTRY_CONTINENT, CITY, POSTAL_CODE, LATITUDE and LONGITUDE):
 
-``` apache
+``` seclang
 SecGeoLookupDB /usr/share/GeoIP/GeoLite2-Country.mmdb
 ...
 SecRule REMOTE_ADDR "@geoLookup" "chain,id:22,drop,msg:'Non-GB IP address'"
@@ -279,7 +279,7 @@ Persistent collection shared by all transactions, in the same configuration name
 
 libModSecurity v3 keeps GLOBAL, IP, RESOURCE, SESSION and USER in memory, per process, by default: the data is not shared between worker processes and is lost on restart. A build configured with --with-lmdb stores them in an LMDB database (./modsec-shared-collections in the working directory) instead. SecDataDir is rejected by the v3 parser, SecCollectionTimeout is not supported, and expirevar is the only expiry mechanism.
 
-``` apache
+``` seclang
 SecAction "phase:1,id:91,nolog,pass,initcol:global=global"
 SecRule REQUEST_URI "^/login" "phase:1,id:92,nolog,pass,setvar:global.login_attempts=+1"
 ```
@@ -314,7 +314,7 @@ The best way to use this variable is as in the example below:
 
 Persistent collection keyed by a client address, typically initialized with the initcol action using REMOTE_ADDR. It is commonly used to track per-client state (for example, anomaly scores or request rates) across transactions. In ModSecurity v2 a selector is mandatory (IP:name or IP:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
-``` apache
+``` seclang
 SecAction "phase:1,id:93,nolog,pass,initcol:ip=%{REMOTE_ADDR}"
 SecRule ARGS attack "phase:2,id:94,nolog,pass,setvar:ip.score=+5,expirevar:ip.score=3600"
 SecRule IP:score "@gt 20" "phase:2,id:95,deny"
@@ -326,7 +326,7 @@ SecRule IP:score "@gt 20" "phase:2,id:95,deny"
 
 This variable holds the value of the most-recently matched variable. It is similar to the TX:0, but it is automatically supported by all operators and there is no need to specify the capture action.
 
-``` apache
+``` seclang
 SecRule ARGS pattern chain,deny,id:25
   SecRule MATCHED_VAR "further scrutiny"
 ```
@@ -343,7 +343,7 @@ Be aware that this variable holds data for the ***last*** operator match. This m
 
 Similar to MATCHED_VAR except that it is a collection of ***all matches*** for the current operator check.
 
-``` apache
+``` seclang
 SecRule ARGS pattern "chain,deny,id:26"
   SecRule MATCHED_VARS "@eq ARGS:param"
 ```
@@ -354,7 +354,7 @@ SecRule ARGS pattern "chain,deny,id:26"
 
 This variable holds the full name of the variable that was matched against.
 
-``` apache
+``` seclang
 SecRule ARGS pattern "chain,deny,id:27"
   SecRule MATCHED_VAR_NAME "@eq ARGS:param"
 ```
@@ -371,7 +371,7 @@ Be aware that this variable holds data for the ***last*** operator match. This m
 
 Similar to MATCHED_VAR_NAME except that it is a collection of ***all matches*** for the current operator check.
 
-``` apache
+``` seclang
 SecRule ARGS pattern "chain,deny,id:28"
   SecRule MATCHED_VARS_NAMES "@eq ARGS:param"
 ```
@@ -382,14 +382,14 @@ SecRule ARGS pattern "chain,deny,id:28"
 
 This variable holds the ModSecurity build number. This variable is intended to be used to check the build number prior to using a feature that is available only in a certain build. Example:
 
-``` apache
+``` seclang
 SecRule MODSEC_BUILD "!@ge 02050102" "skipAfter:12345,id:29"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
 
 libModSecurity v3 build numbers follow the same scheme: two digits each for the major, minor and patch level, followed by the three-digit tag number 100 (for example 030017100 for 3.0.17):
 
-``` apache
+``` seclang
 SecRule MODSEC_BUILD "!@ge 030017100" "skipAfter:12345,id:29"
 SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 ```
@@ -540,7 +540,7 @@ MULTIPART_STRICT_ERROR will be set to 1 when any of the following variables is a
 
 The best way to use this variable is as in the example below:
 
-``` apache
+``` seclang
 SecRule MULTIPART_STRICT_ERROR "!@eq 0" \
 "phase:2,id:30,t:none,log,deny,msg:'Multipart request body \
 failed strict validation: \
@@ -575,7 +575,7 @@ Set to 1 when, during the parsing phase of a multipart/request-body, ModSecurity
 
 The best way to use this variable is as in the example below:
 
-``` apache
+``` seclang
 SecRule MULTIPART_UNMATCHED_BOUNDARY "!@eq 0" \
 "phase:2,id:31,t:none,log,deny,msg:'Multipart parser detected a possible unmatched boundary.'"
 ```
@@ -666,7 +666,7 @@ Contains the time, in microseconds, spent processing phase 5.
 
 PERF_RULES is a collection, that is populated with the rules hitting the performance threshold defined with SecRulePerfTime. The collection contains the time, in microseconds, spent processing the individual rule. The various items in the collection can be accessed via the rule id.
 
-``` apache
+``` seclang
 SecRulePerfTime            100
 
 SecRule FILES_TMPNAMES "@inspectFile /path/to/util/runav.pl" \
@@ -777,7 +777,7 @@ It is more common, however, simply to output the content in a log line, as in ru
 
 Contains the name of the currently used request body processor. If set, the possible values are URLENCODED, MULTIPART, XML, and JSON; it is an empty string when no processor is in use. Both engines select URLENCODED and MULTIPART automatically from the Content-Type; XML and JSON must be selected with ctl:requestBodyProcessor.
 
-``` apache
+``` seclang
 SecRule REQBODY_PROCESSOR "^XML$" "chain,id:41"
   SecRule XML "@validateDTD /opt/apache-frontend/conf/xml.dtd"
 ```
@@ -884,7 +884,7 @@ This variable is a collection of the names of all of the request headers.
 
 This variable holds the complete request line sent to the server (including the request method and HTTP version information).
 
-``` apache
+``` seclang
 # Allow only POST, GET and HEAD request methods, as well as only
 # the valid protocol versions
 SecRule REQUEST_LINE "!(^((?:(?:POS|GE)T|HEAD))|HTTP/(0\.9|1\.0|1\.1)$)" "phase:1,id:49,log,block,t:none"
@@ -940,7 +940,7 @@ Please note that anti-evasion transformations are not used on REQUEST_URI_RAW, w
 
 Persistent collection keyed by a resource identifier (typically the request path), within the namespace set by SecWebAppId. It is initialized with the setrsc action (ModSecurity 2.7.0 and later) or with initcol, and can be used to keep per-resource state across transactions. In ModSecurity v2 a selector is mandatory (RESOURCE:name or RESOURCE:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
-``` apache
+``` seclang
 SecAction "phase:1,id:96,nolog,pass,setrsc:%{REQUEST_FILENAME}"
 SecRule RESPONSE_STATUS "^5" "phase:3,id:97,nolog,pass,setvar:resource.errors=+1"
 ```
@@ -1079,7 +1079,7 @@ Not available in proxy mode.
 
 This variable holds the script’s permissions mode data as four hexadecimal digits of the APR protection bits, which for ordinary Unix permissions reads like the octal mode with a leading zero (e.g., 0644).
 
-``` apache
+``` seclang
 # Do not allow scripts that can be written to by everyone
 SecRule SCRIPT_MODE "[2367]$" "id:64"
 ```
@@ -1096,7 +1096,7 @@ Not available in proxy mode.
 
 This variable holds the numerical identifier of the owner of the script.
 
-``` apache
+``` seclang
 # Do not run any scripts that are owned
 # by Apache (Apache's user id is 46)
 SecRule SCRIPT_UID "!^46$" "id:65"
@@ -1114,7 +1114,7 @@ Not available in proxy mode.
 
 This variable holds the username of the owner of the script.
 
-``` apache
+``` seclang
 # Do not run any scripts owned by Apache SecRule
 SCRIPT_USERNAME "^apache$" "id:66"
 ```
@@ -1163,7 +1163,7 @@ This variable is a collection that contains session information. It becomes avai
 
 The following example shows how to initialize SESSION using setsid, how to use setvar to increase the SESSION.score values, how to set the SESSION.blocked variable, and finally, how to deny the connection based on the <SESSION:blocked> value:
 
-``` apache
+``` seclang
 # Initialize session storage
 SecRule REQUEST_COOKIES:PHPSESSID !^$ "phase:2,id:70,nolog,pass,setsid:%{REQUEST_COOKIES.PHPSESSID}"
 
@@ -1195,7 +1195,7 @@ libModSecurity v3 only: the HTTP response status code, the same value as RESPONS
 
 This variable holds the response status line generated by the server, that is the status code followed by the reason phrase (for example 500 Internal Server Error); the protocol version is not included. In libModSecurity v3 it is an alias of STATUS and therefore holds only the status code.
 
-``` apache
+``` seclang
 # Generate an alert when the application generates 500 errors.
 SecRule STATUS_LINE "@contains 500" "phase:3,id:49,log,pass,logdata:'Application error detected!,t:none"
 ```
@@ -1323,7 +1323,7 @@ This variable holds the current four-digit year value.
 
 This is the transient transaction collection, which is used to store pieces of data, create a transaction anomaly score, and so on. The variables placed into this collection are available only until the transaction is complete. In ModSecurity v2 a selector is mandatory (TX:name or TX:/regex/); a bare TX target is a configuration error.
 
-``` apache
+``` seclang
 # Increment transaction attack score on attack
 SecRule ARGS attack "phase:2,id:82,nolog,pass,setvar:TX.score=+5"
 
@@ -1358,7 +1358,7 @@ This variable is created when an invalid URL encoding is encountered during the 
 
 Persistent collection keyed by the user identifier set with setuid (see USERID). It must be initialized with setuid or initcol before it can be used. In ModSecurity v2 a selector is mandatory (USER:name or USER:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
-``` apache
+``` seclang
 SecAction "phase:1,id:98,nolog,pass,setuid:%{REMOTE_USER}"
 SecRule ARGS attack "phase:2,id:99,nolog,pass,setvar:user.score=+5"
 SecRule USER:score "@gt 20" "phase:2,id:100,deny"
@@ -1370,7 +1370,7 @@ SecRule USER:score "@gt 20" "phase:2,id:100,deny"
 
 This variable contains the value set with setuid.
 
-``` apache
+``` seclang
 # Initialize user tracking
 SecAction "nolog,id:84,pass,setuid:%{REMOTE_USER}"
 
@@ -1408,7 +1408,7 @@ Special collection used to interact with the XML parser. It can be used standalo
 
 libModSecurity v3 supports it only when built with libxml2; without it the variable parses but never yields a value. XPath selection works the same way (XML:/xpath, with namespaces registered through the xmlns action), and a bare XML yields a placeholder value for the validation operators.
 
-``` apache
+``` seclang
 SecDefaultAction log,deny,status:403,phase:2,id:90
 SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:87,t:lowercase,nolog,pass,ctl:requestBodyProcessor=XML"
 SecRule REQBODY_PROCESSOR "!^XML$" skipAfter:12345,id:88

@@ -7,7 +7,7 @@ Macros allow for using placeholders in rules that will be expanded out to their 
 
 Format:
 
-``` apache
+``` text
 %{VARIABLE}
 %{COLLECTION.VARIABLE}
 ```

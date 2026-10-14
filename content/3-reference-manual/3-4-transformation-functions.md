@@ -39,7 +39,7 @@ The remainder of this section documents the transformation functions currently a
 
 Decodes a Base64-encoded string.
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:Authorization "^Basic ([a-zA-Z0-9]+=*)$" "phase:1,id:93,capture,chain,logdata:%{TX.1}"
   SecRule TX:1 ^(\w+): t:base64Decode,capture,chain
     SecRule TX:1 ^(admin|root|backup)$
@@ -110,7 +110,7 @@ ModSecurity v2 registers this function as `cmdline`; because transformation name
 
 **Example Usage:**
 
-``` apache
+``` seclang
 SecRule ARGS "(?:command(?:.com)?|cmd(?:.exe)?)(?:/.*)?/[ck]" "phase:2,id:94,t:none, t:cmdLine"
 ```
 

@@ -1,0 +1,41 @@
+{{- /* SecLang (ModSecurity rules language) highlighting.
+       Chroma has no SecLang lexer, so the block is rendered through the theme's
+       highlight partial with the plain "text" lexer (which keeps the Relearn
+       wrapper, copy button, wrapping and line options) and the tokens are then
+       colored with regular expressions. Colors are the Monokai values Chroma
+       emits inline for every other block on this site. */ -}}
+{{- $html := partial "shortcodes/highlight.html" (dict
+  "page"       .Page
+  "attributes" .Attributes
+  "content"    .Inner
+  "options"    .Options
+  "type"       "text"
+) -}}
+{{- $comment  := "#75715e" -}}
+{{- $keyword  := "#66d9ef" -}}
+{{- $variable := "#a6e22e" -}}
+{{- $string   := "#e6db74" -}}
+{{- $operator := "#f92672" -}}
+{{- $action   := "#fd971f" -}}
+{{- $actions := "accuracy|allow|append|auditlog|block|capture|chain|ctl|deny|deprecatevar|drop|exec|expirevar|id|initcol|log|logdata|maturity|msg|multiMatch|noauditlog|nolog|pass|pause|phase|prepend|proxy|redirect|rev|sanitiseArg|sanitiseMatched|sanitiseMatchedBytes|sanitiseRequestHeader|sanitiseResponseHeader|sanitizeArg|sanitizeMatched|sanitizeMatchedBytes|sanitizeRequestHeader|sanitizeResponseHeader|setenv|setrsc|setsid|setuid|setvar|severity|skip|skipAfter|status|t|tag|ver|xmlns" -}}
+{{- /* 1. whole-line comments (anchored to the start of a Chroma line span) */ -}}
+{{- $html = replaceRE `(<span>)(\s*#[^<]*)` (printf `$1<span style="color:%s">$2</span>` $comment) $html -}}
+{{- /* 2. directive names at the start of a line */ -}}
+{{- $html = replaceRE `(<span>)(\s*)(Sec[A-Za-z0-9]+|Include)\b` (printf `$1$2<span style="color:%s">$3</span>` $keyword) $html -}}
+{{- /* 3. the unquoted variable list that follows SecRule */ -}}
+{{- $html = replaceRE (printf `(<span style="color:%s">SecRule</span>\s+)([^\s&<"]+)` $keyword) (printf `$1<span style="color:%s">$2</span>` $variable) $html -}}
+{{- /* 4. double-quoted strings (HTML-escaped quotes) */ -}}
+{{- $html = replaceRE `(&#34;[^<\n]*?&#34;)` (printf `<span style="color:%s">$1</span>` $string) $html -}}
+{{- /* 5. operators at the start of a string: "@rx ..." or "!@eq 0" */ -}}
+{{- $html = replaceRE `(&#34;)(!?@[A-Za-z0-9]+)` (printf `$1<span style="color:%s">$2</span>` $operator) $html -}}
+{{- /* 6. action names in action lists: name: or name=... inside a string */ -}}
+{{- /* run twice: consecutive actions share the comma that delimits them */ -}}
+{{- range seq 2 -}}
+{{- $html = replaceRE (printf `(&#34;|,|\s)(%s)(:|,|&#34;|<)` $actions) (printf `$1<span style="color:%s">$2</span>$3` $action) $html -}}
+{{- end -}}
+{{- /* 7. the variable list when it is quoted: "ARGS|ARGS_NAMES" right after SecRule */ -}}
+{{- $html = replaceRE (printf `(<span style="color:%s">SecRule</span>\s+<span style="color:%s">&#34;)([^&]+)` $keyword $string) (printf `$1<span style="color:%s">$2</span>` $variable) $html -}}
+{{- /* the partial was given the text lexer; label the block as SecLang */ -}}
+{{- $html = replaceRE `language-text` "language-seclang" $html -}}
+{{- $html = replaceRE `data-lang="?text"?` "data-lang=\"seclang\"" $html -}}
+{{- $html | safeHTML -}}

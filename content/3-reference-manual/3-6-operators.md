@@ -15,7 +15,7 @@ Returns true if the parameter string is found at the beginning of the input. Mac
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect request line that does not begin with "GET" 
 SecRule REQUEST_LINE "!@beginsWith GET" "id:149"
 ```
@@ -28,7 +28,7 @@ Returns true if the parameter string is found anywhere in the input. Macro expan
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect ".php" anywhere in the request line 
 SecRule REQUEST_LINE "@contains .php" "id:150"
 ```
@@ -41,7 +41,7 @@ Returns true if the parameter string (with word boundaries) is found anywhere in
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect "select" anywhere in ARGS 
 SecRule ARGS "@containsWord select" "id:151"
 ```
@@ -60,7 +60,7 @@ Returns true if SQL injection payload is found. This operator uses LibInjection 
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect SQL Injection inside request uri data" 
 SecRule REQUEST_URI "@detectSQLi" "id:152"
 ```
@@ -79,7 +79,7 @@ Returns true if XSS injection is found. This operator uses LibInjection to detec
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect XSS Injection inside request body 
 SecRule REQUEST_BODY "@detectXSS" "id:12345,log,deny"
 ```
@@ -98,7 +98,7 @@ Returns true if the parameter string is found at the end of the input. Macro exp
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect request line that does not end with "HTTP/1.1" 
 SecRule REQUEST_LINE "!@endsWith HTTP/1.1" "id:152"
 ```
@@ -111,7 +111,7 @@ Performs numerical comparison and returns true if the input value is equal to th
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect exactly 15 request headers 
 SecRule &REQUEST_HEADERS_NAMES "@eq 15" "id:153"
 ```
@@ -134,7 +134,7 @@ For further information on ssdeep, visit its site: <http://ssdeep.sourceforge.ne
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_BODY "\@fuzzyHash /path/to/ssdeep/hashes.txt 6" "id:192372,log,deny"
 ```
 
@@ -146,7 +146,7 @@ Performs numerical comparison and returns true if the input value is greater tha
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect 15 or more request headers 
 SecRule &REQUEST_HEADERS_NAMES "@ge 15" "id:154"
 ```
@@ -165,7 +165,7 @@ Performs a geolocation lookup using the IP address in input against the geolocat
 
 **Example:** The geoLookup operator matches on success and is thus best used in combination with nolog,pass. If you wish to block on a failed lookup (which may be over the top, depending on how accurate the geolocation database is), the following example demonstrates how best to do it:
 
-``` apache
+``` seclang
 # Configure geolocation database 
 SecGeoLookupDb /path/to/GeoLiteCity.dat 
 ... 
@@ -186,7 +186,7 @@ Performs a local lookup of Google's Safe Browsing using URLs in input against th
 
 **Example:** The gsbLookup operator matches on success and is thus best used in combination with a block or redirect action. If you wish to block on successful lookups, the following example demonstrates how best to do it:
 
-``` apache
+``` seclang
 # Configure Google Safe Browsing database 
 SecGsbLookupDb /path/to/GsbMalware.dat 
 ... 
@@ -208,7 +208,7 @@ Performs numerical comparison and returns true if the input value is greater tha
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect more than 15 headers in a request 
 SecRule &REQUEST_HEADERS_NAMES "@gt 15" "id:158"
 ```
@@ -275,20 +275,20 @@ print "$output\n";
 
 **Example:** Using the runav.pl script:
 
-``` apache
+``` seclang
 # Execute external program to validate uploaded files 
 SecRule FILES_TMPNAMES "@inspectFile /path/to/util/runav.pl" "id:159"
 ```
 
 Example of using Lua script (placed in the same directory as the configuration file):
 
-``` apache
+``` seclang
 SecRule FILES_TMPNAMES "@inspectFile inspect.lua" "id:160"
 ```
 
 The contents of inspect.lua:
 
-``` apache
+``` lua
 function main(filename)
     -- Do something to the file to verify it. In this example, we
     -- read up to 10 characters from the beginning of the file.
@@ -334,13 +334,13 @@ Performs a fast ipv4 or ipv6 match of REMOTE_ADDR variable data. Can handle the 
 
 Individual Address:
 
-``` apache
+``` seclang
 SecRule REMOTE_ADDR "@ipMatch 192.168.1.100" "id:161"
 ```
 
 Multiple Addresses w/network block:
 
-``` apache
+``` seclang
 SecRule REMOTE_ADDR "@ipMatch 192.168.1.100,192.168.1.50,10.10.50.0/24" "id:162"
 ```
 
@@ -363,13 +363,13 @@ Performs a fast ipv4 or ipv6 match of REMOTE_ADDR variable, loading data from a 
 
 **Examples:**
 
-``` apache
+``` seclang
 SecRule REMOTE_ADDR "@ipMatchFromFile ips.txt" "id:163"
 ```
 
 The file ips.txt may contain:
 
-``` apache
+``` text
 192.168.0.1
 172.16.0.0/16
 10.0.0.0/8
@@ -401,7 +401,7 @@ Performs numerical comparison and returns true if the input value is less than o
 
 **Example**:
 
-``` apache
+``` seclang
 # Detect 15 or fewer headers in a request 
 SecRule &REQUEST_HEADERS_NAMES "@le 15" "id:164"
 ```
@@ -420,7 +420,7 @@ Performs numerical comparison and returns true if the input value is less than t
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect fewer than 15 headers in a request 
 SecRule &REQUEST_HEADERS_NAMES "@lt 15" "id:165"
 ```
@@ -445,7 +445,7 @@ Performs a case-insensitive match of the provided phrases against the desired in
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect suspicious client by looking at the user agent identification 
 SecRule REQUEST_HEADERS:User-Agent "@pm WebZIP WebCopier Webster WebStripper ... SiteSnagger ProWebWalker CheeseBot" "id:166"
 ```
@@ -484,7 +484,7 @@ This operator is the same as @pm, except that it takes a list of files as argume
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect suspicious user agents using the keywords in 
 # the files /path/to/blacklist1 and blacklist2 (the latter 
 # must be placed in the same folder as the configuration file) 
@@ -498,7 +498,7 @@ Notes:
 3.  The @pm operator phrases do not support metacharacters.
 4.  Because this operator does not check for boundaries when matching, false positives are possible in some cases. For example, if you want to use @pm for IP address matching, the phrase 1.2.3.4 will potentially match more than one IP address (e.g., it will also match 1.2.3.40 or 1.2.3.41). To avoid the false positives, you can use your own boundaries in phrases. For example, use /1.2.3.4/ instead of just 1.2.3.4. Then, in your rules, also add the boundaries where appropriate. You will find a complete example in the example.
 
-``` apache
+``` seclang
 # Prepare custom REMOTE_ADDR variable 
 SecAction "phase:1,id:168,nolog,pass,setvar:tx.REMOTE_ADDR=/%{REMOTE_ADDR}/"
 
@@ -508,7 +508,7 @@ SecRule TX:REMOTE_ADDR "@pmFromFile blacklist.txt" "phase:1,id:169,deny,msg:'Bla
 
 The file blacklist.txt may contain:
 
-``` apache
+``` seclang
 # ip-blacklist.txt contents:
 # NOTE: All IPs must be prefixed/suffixed with "/" as the rules
 #   will add in this character as a boundary to ensure
@@ -550,7 +550,7 @@ Looks up the input value in the RBL (real-time block list) given as parameter. T
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REMOTE_ADDR "@rbl sbl-xbl.spamhaus.org" "phase:1,id:171,t:none,pass,nolog,auditlog,msg:'RBL Match for SPAM Source',tag:'AUTOMATION/MALICIOUS',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.automation_score=+%{tx.warning_anomaly_score},setvar:tx.anomaly_score=+%{tx.warning_anomaly_score}, \
 setvar:tx.%{rule.id}-AUTOMATION/MALICIOUS-%{matched_var_name}=%{matched_var},setvar:ip.spammer=1,expirevar:ip.spammer=86400,setvar:ip.previous_rbl_check=1,expirevar:ip.previous_rbl_check=86400,skipAfter:END_RBL_CHECK"
 ```
@@ -581,7 +581,7 @@ Performs regular expression data substitution when applied to either the STREAM_
 
 **Examples:** Removing HTML Comments from response bodies:
 
-``` apache
+``` seclang
 SecStreamOutBodyInspection On
 SecRule STREAM_OUTPUT_BODY "@rsub s/<!--.*?-->/ /" "phase:4,id:172,t:none,nolog,pass"
 ```
@@ -602,7 +602,7 @@ Performs a regular expression match of the pattern provided as parameter. **This
 
 **Examples:**
 
-``` apache
+``` seclang
 # Detect Nikto 
 SecRule REQUEST_HEADERS:User-Agent "@rx nikto" phase:1,id:173,t:lowercase
 
@@ -643,7 +643,7 @@ Performs a global regular expression match of the pattern provided as parameter.
 
 **Example:**
 
-``` apache
+``` seclang
 # From a query argument 'aaa12bbb45ccc', both '12' and '45' will be returned as captures
 SecRule ARGS_GET "@rxGlobal [0-9]+" "phase:1,id:174,capture"
 ```
@@ -658,7 +658,7 @@ Performs a string comparison and returns true if the parameter string is identic
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect request parameters "foo" that do not # contain "bar", exactly. 
 SecRule ARGS:foo "!@streq bar" "id:176"
 ```
@@ -671,7 +671,7 @@ Performs a string match of the provided word against the desired input value. In
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect suspicious client by looking at the user agent identification 
 SecRule REQUEST_HEADERS:User-Agent "@strmatch WebZIP" "id:177"
 ```
@@ -690,7 +690,7 @@ Will force the rule to always return true. This is similar to SecAction however 
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REMOTE_ADDR "@unconditionalMatch" "id:1000,phase:1,pass,nolog,t:hexEncode,setvar:TX.ip_hash=%{MATCHED_VAR}"
 ```
 
@@ -702,7 +702,7 @@ Validates that the byte values used in input fall into the range specified by th
 
 **Example:**
 
-``` apache
+``` seclang
 # Enforce very strict byte range for request parameters (only 
 # works for the applications that do not use the languages other 
 # than English). 
@@ -711,7 +711,7 @@ SecRule ARGS "@validateByteRange 10, 13, 32-126" "id:178"
 
 The validateByteRange is most useful when used to detect the presence of NUL bytes, which don’t have a legitimate use, but which are often used as an evasion technique.
 
-``` apache
+``` seclang
 # Do not allow NUL bytes 
 SecRule ARGS "@validateByteRange 1-255" "id:179"
 ```
@@ -736,7 +736,7 @@ Validates the XML DOM tree against the supplied DTD. The DOM tree must have been
 
 **Example:**
 
-``` apache
+``` seclang
 # Parse the request bodies that contain XML 
 SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:180,nolog,pass,t:lowercase,ctl:requestBodyProcessor=XML"
 
@@ -754,7 +754,7 @@ Validates REQUEST_URI that contains data protected by the hash engine. Added in 
 
 **Example:**
 
-``` apache
+``` seclang
 # Validates requested URI that matches a regular expression.
 SecRule REQUEST_URI "@validatehash "product_info|product_list" "phase:1,deny,id:123456"
 ```
@@ -767,7 +767,7 @@ Validates the XML DOM tree against the supplied XML Schema. The DOM tree must ha
 
 **Example:**
 
-``` apache
+``` seclang
 # Parse the request bodies that contain XML 
 SecRule REQUEST_HEADERS:Content-Type ^text/xml$ "phase:1,id:190,nolog,pass,t:lowercase,ctl:requestBodyProcessor=XML"
 
@@ -785,7 +785,7 @@ Validates the URL-encoded characters in the provided input string.
 
 **Example:**
 
-``` apache
+``` seclang
 # Validate URL-encoded characters in the request URI 
 SecRule REQUEST_URI_RAW "@validateUrlEncoding" "id:192"
 ```
@@ -800,7 +800,7 @@ Check whether the input is a valid UTF-8 string.
 
 **Example:**
 
-``` apache
+``` seclang
 # Make sure all request parameters contain only valid UTF-8 
 SecRule ARGS "@validateUtf8Encoding" "id:193"
 ```
@@ -823,7 +823,7 @@ Detects credit card numbers in input. This operator will first use the supplied 
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect credit card numbers in parameters and 
 # prevent them from being logged to audit log 
 SecRule ARGS "@verifyCC \d{13,16}" "phase:2,id:194,nolog,pass,msg:'Potential credit card number',sanitiseMatched"
@@ -843,7 +843,7 @@ Detects CPF numbers (Brazilian social number) in input. This operator will first
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect CPF numbers in parameters and 
 # prevent them from being logged to audit log 
 SecRule ARGS "@verifyCPF /^([0-9]{3}\.){2}[0-9]{3}-[0-9]{2}$/" "phase:2,id:195,nolog,pass,msg:'Potential CPF number',sanitiseMatched"
@@ -863,7 +863,7 @@ Detects US social security numbers (SSN) in input. This operator will first use 
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect social security numbers in parameters and 
 # prevent them from being logged to audit log 
 SecRule ARGS "@verifySSN \d{3}-?\d{2}-?\d{4}" "phase:2,id:196,nolog,pass,msg:'Potential social security number',sanitiseMatched"
@@ -900,7 +900,7 @@ Detects Austrian social insurance numbers (Sozialversicherungsnummer, SVNR) in i
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect Austrian social insurance numbers in parameters and
 # prevent them from being logged to audit log
 SecRule ARGS "@verifySVNR \d{4}\s?\d{6}" "phase:2,id:198,nolog,pass,msg:'Potential SVNR number',sanitiseMatched"
@@ -928,7 +928,7 @@ Returns true if the input value (the needle) is found anywhere within the @withi
 
 **Example:**
 
-``` apache
+``` seclang
 # Detect request methods other than GET, POST and HEAD 
 SecRule REQUEST_METHOD "!@within GET,POST,HEAD"
 ```
@@ -939,7 +939,7 @@ There are no delimiters for this operator, it is therefore often necessary to ar
 
 {{% /notice %}}
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS_NAMES "@rx ^.*$" \
 "chain,\
 id:1,\

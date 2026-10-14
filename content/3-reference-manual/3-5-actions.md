@@ -26,7 +26,7 @@ Specifies the relative accuracy level of the rule related to false positives/neg
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
     "phase:2,ver:'CRS/2.2.4,accuracy:'9',maturity:'9',capture,t:none,t:htmlEntityDecode,t:compressWhiteSpace,t:lowercase,ctl:auditLogParts=+E,block,msg:'Cross-site Scripting (XSS) Attack',id:'958016',tag:'WEB_ATTACK/XSS',tag:'WASCTC/WASC-8',tag:'WASCTC/WASC-22',tag:'OWASP_TOP_10/A2',tag:'OWASP_AppSensor/IE1',tag:'PCI/6.5.1',logdata:'% \
 {TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.xss_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/XSS-%{matched_var_name}=%{tx.0}"
@@ -40,7 +40,7 @@ Stops rule processing on a successful match and allows the transaction to procee
 
 Example:
 
-``` apache
+``` seclang
 # Allow unrestricted access from 192.168.1.100 
 SecRule REMOTE_ADDR "^192\.168\.1\.100$" phase:1,id:95,nolog,allow
 ```
@@ -53,7 +53,7 @@ Prior to ModSecurity 2.5 the allow action would only affect the current phase. A
 
 Examples:
 
-``` apache
+``` seclang
 # Do not process request but process response.
 SecAction phase:1,allow:request,id:96
 
@@ -63,7 +63,7 @@ SecAction phase:1,allow,id:97
 
 If you want to allow a response through, put a rule in phase RESPONSE_HEADERS and simply use allow on its own:
 
-``` apache
+``` seclang
 # Allow response through.
 SecAction phase:3,allow,id:98
 ```
@@ -78,7 +78,7 @@ Appends text given as parameter to the end of response body. Content injection m
 
 Example:
 
-``` apache
+``` seclang
 SecRule RESPONSE_CONTENT_TYPE "^text/html" "nolog,id:99,pass,append:'<hr>Footer'"
 ```
 
@@ -116,7 +116,7 @@ This action is essentially a placeholder that is intended to be used by rule wri
 
 Examples:
 
-``` apache
+``` seclang
 # Specify how blocking is to be done 
 SecDefaultAction phase:2,deny,id:101,status:403,log,auditlog
 
@@ -135,7 +135,7 @@ It is possible to use the SecRuleUpdateActionById directive to override how a ru
 
 The following example demonstrates the first case, in which the hard-coded block is removed in favor of the user-controllable block:
 
-``` apache
+``` seclang
 # Specify how blocking is to be done 
 SecDefaultAction phase:2,deny,status:403,log,auditlog,id:104
 
@@ -156,7 +156,7 @@ When used together with the regular expression operator (@rx), the capture actio
 
 Example:
 
-``` apache
+``` seclang
 SecRule REQUEST_BODY "^username=(\w{25,})" phase:2,capture,t:none,chain,id:105
   SecRule TX:1 "(?:(?:a(dmin|nonymous)))"
 ```
@@ -174,7 +174,7 @@ Chains the current rule with the rule that immediately follows it, creating a ru
 
 Example:
 
-``` apache
+``` seclang
 # Refuse to accept POST requests that do not contain Content-Length header. 
 # (Do note that this rule should be preceded by a rule 
 # that verifies only valid request methods are used.) 
@@ -208,7 +208,7 @@ Changes ModSecurity configuration on transient, per-transaction basis. Any chang
 
 **Example:**
 
-``` apache
+``` seclang
 # Parse requests with Content-Type "text/xml" as XML 
 SecRule REQUEST_CONTENT_TYPE ^text/xml "nolog,pass,id:106,ctl:requestBodyProcessor=XML"
 
@@ -269,7 +269,7 @@ Decrements numerical value over time, which makes sense only applied to the vari
 
 Example: The following example will decrement the counter by 60 every 300 seconds.
 
-``` apache
+``` seclang
 SecAction phase:5,id:108,nolog,pass,deprecatevar:SESSION.score=60/300
 ```
 
@@ -283,7 +283,7 @@ Initiates an immediate close of the TCP connection by sending a FIN packet.
 
 **Example:** The following example initiates an IP collection for tracking Basic Authentication attempts. If the client goes over the threshold of more than 25 attempts in 2 minutes, it will DROP subsequent connections.
 
-``` apache
+``` seclang
 SecAction phase:1,id:109,initcol:ip=%{REMOTE_ADDR},nolog
 SecRule ARGS:login "!^$" "nolog,phase:1,id:110,setvar:ip.auth_attempt=+1,deprecatevar:ip.auth_attempt=25/120"
 SecRule IP:AUTH_ATTEMPT "@gt 25" "log,drop,phase:1,id:111,msg:'Possible Brute Force Attack'"
@@ -307,7 +307,7 @@ Executes an external script/binary supplied as parameter. As of v2.5.0, if the p
 
 **Example:**
 
-``` apache
+``` seclang
 # Run external program on rule match 
 SecRule REQUEST_URI "^/cgi-bin/script\.pl" "phase:2,id:112,t:none,t:lowercase,t:normalizePath,block,\ exec:/usr/local/apache/bin/test.sh"
 
@@ -327,7 +327,7 @@ Configures a collection variable to expire after the given time period (in secon
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_COOKIES:JSESSIONID "!^$" "nolog,phase:1,id:114,pass,setsid:%{REQUEST_COOKIES:JSESSIONID}"
 SecRule REQUEST_URI "^/cgi-bin/script\.pl" "phase:2,id:115,t:none,t:lowercase,t:normalizePath,log,allow,setvar:session.suspicious=1,expirevar:session.suspicious=3600,phase:1"
 ```
@@ -344,7 +344,7 @@ Assigns a unique, numeric ID to the rule or chain in which it appears. Starting 
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule &REQUEST_HEADERS:Host "@eq 0" "log,id:60008,severity:2,msg:'Request Missing a Host Header'"
 ```
 
@@ -399,7 +399,7 @@ Initializes a named persistent collection, either by loading data from storage o
 
 **Example:** The following example initiates IP address tracking, which is best done in phase 1:
 
-``` apache
+``` seclang
 SecAction phase:1,id:116,nolog,pass,initcol:ip=%{REMOTE_ADDR}
 ```
 
@@ -417,7 +417,7 @@ Indicates that a successful match of the rule needs to be logged.
 
 **Example:**
 
-``` apache
+``` seclang
 SecAction phase:1,id:117,pass,initcol:ip=%{REMOTE_ADDR},log
 ```
 
@@ -431,7 +431,7 @@ Logs a data fragment as part of the alert message.
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule ARGS:p "@rx <script>" "phase:2,id:118,log,pass,logdata:%{MATCHED_VAR}"
 ```
 
@@ -453,7 +453,7 @@ Specifies the relative maturity level of the rule related to the length of time 
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
     "phase:2,ver:'CRS/2.2.4,accuracy:'9',maturity:'9',capture,t:none,t:htmlEntityDecode,t:compressWhiteSpace,t:lowercase,ctl:auditLogParts=+E,block,msg:'Cross-site Scripting (XSS) Attack',id:'958016',tag:'WEB_ATTACK/XSS',tag:'WASCTC/WASC-8',tag:'WASCTC/WASC-22',tag:'OWASP_TOP_10/A2',tag:'OWASP_AppSensor/IE1',tag:'PCI/6.5.1',logdata:'% \
 {TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.xss_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/XSS-%{matched_var_name}=%{tx.0}"
@@ -467,7 +467,7 @@ Assigns a custom message to the rule or chain in which it appears. The message w
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule &REQUEST_HEADERS:Host "@eq 0" "log,id:60008,severity:2,msg:'Request Missing a Host Header'"
 ```
 
@@ -485,7 +485,7 @@ If enabled, ModSecurity will perform multiple operator invocations for every tar
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule ARGS "attack" "phase:1,log,deny,id:119,t:removeNulls,t:lowercase,multiMatch"
 ```
 
@@ -499,7 +499,7 @@ Indicates that a successful match of the rule should not be used as criteria to 
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" allow,noauditlog,id:120
 ```
 
@@ -515,7 +515,7 @@ Prevents rule matches from appearing in both the error and audit logs.
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" allow,nolog,id:121
 ```
 
@@ -529,13 +529,13 @@ Continues processing with the next rule in spite of a successful match.
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" "log,pass,id:122"
 ```
 
 When using pass with a SecRule with multiple targets, all variables will be inspected and all non-disruptive actions trigger for every match. In the following example, the TX.test variable will be incremented once for every request parameter:
 
-``` apache
+``` seclang
 # Set TX.test to zero 
 SecAction "phase:2,nolog,pass,setvar:TX.test=0,id:123"
 
@@ -551,7 +551,7 @@ Pauses transaction processing for the specified number of milliseconds. Starting
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" "log,pause:5000,id:125"
 ```
 
@@ -571,7 +571,7 @@ Places the rule or chain into one of five available processing phases. It can al
 
 **Example:**
 
-``` apache
+``` seclang
 # Initialize IP address tracking in phase 1
 SecAction phase:1,nolog,pass,id:126,initcol:IP=%{REMOTE_ADDR}
 ```
@@ -586,7 +586,7 @@ Starting in ModSecurity version v2.7 (and in all libModSecurity v3 releases) the
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" "phase:request,log,deny,id:127"
 ```
 
@@ -605,7 +605,7 @@ Prepends the text given as parameter to response body. Content injection must be
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule RESPONSE_CONTENT_TYPE ^text/html \ "phase:3,nolog,pass,id:128,prepend:'Header<br>'"
 ```
 
@@ -625,7 +625,7 @@ Intercepts the current transaction by forwarding the request to another web serv
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" log,id:129,proxy:http://honeypothost/
 SecRule REQUEST_URI "@streq /test.txt" "phase:1,proxy:'[nocanon]http://$ENV{SERVER_NAME}:$ENV{SERVER_PORT}/test.txt',id:500005"
 ```
@@ -646,7 +646,7 @@ Intercepts transaction by issuing an external (client-visible) redirection to th
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:User-Agent "Test" "phase:1,id:130,log,redirect:http://www.example.com/failed.html"
 ```
 
@@ -660,7 +660,7 @@ Specifies rule revision. It is useful in combination with the id action to provi
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "(?:(?:[\;\|\`]\W*?\bcc|\b(wget|curl))\b|\/cc(?:[\'\"\|\;\`\-\s]|$))" \
                     "phase:2,rev:'2.1.3',capture,t:none,t:normalizePath,t:lowercase,ctl:auditLogParts=+E,block,msg:'System Command Injection',id:'950907',tag:'WEB_ATTACK/COMMAND_INJECTION',tag:'WASCTC/WASC-31',tag:'OWASP_TOP_10/A1',tag:'PCI/6.5.2',logdata:'%{TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.command_injection_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/COMMAND_INJECTION-%{matched_var_name}=%{tx.0},skipAfter:END_COMMAND_INJECTION1"
 ```
@@ -679,7 +679,7 @@ Prevents sensitive request parameter data from being logged to audit log. Each b
 
 **Example:**
 
-``` apache
+``` seclang
 # Never log passwords 
 SecAction "nolog,phase:2,id:131,sanitiseArg:password,sanitiseArg:newPassword,sanitiseArg:oldPassword"
 ```
@@ -700,7 +700,7 @@ Prevents the matched variable (request argument, request header, or response hea
 
 **Example:** This action can be used to sanitize arbitrary transaction elements when they match a condition. For example, the example below will sanitize any argument that contains the word password in the name.
 
-``` apache
+``` seclang
 SecRule ARGS_NAMES password nolog,pass,id:132,sanitiseMatched
 ```
 
@@ -723,7 +723,7 @@ Prevents the matched string in a variable from being logged to audit log. Each o
 - sanitiseMatchedBytes -- This would x out only the bytes that matched.
 - sanitiseMatchedBytes:1/4 -- This would x out the bytes that matched, but keep the first byte and last 4 bytes. Both numbers must be a single digit (0-9); any other parameter is ignored and the whole match is sanitized.
 
-``` apache
+``` seclang
 # Detect credit card numbers in parameters and 
 # prevent them from being logged to audit log 
 SecRule ARGS "@verifyCC \d{13,16}" "phase:2,id:133,nolog,capture,pass,msg:'Potential credit card number in request',sanitiseMatchedBytes"
@@ -746,7 +746,7 @@ Prevents a named request header from being logged to audit log. Each byte of the
 
 **Example:** This will sanitize the data in the Authorization header.
 
-``` apache
+``` seclang
 SecAction "phase:1,nolog,pass,id:135,sanitiseRequestHeader:Authorization"
 ```
 
@@ -766,7 +766,7 @@ Prevents a named response header from being logged to audit log. Each byte of th
 
 **Example:** This will sanitize the Set-Cookie data sent to the client.
 
-``` apache
+``` seclang
 SecAction "phase:3,nolog,pass,id:136,sanitiseResponseHeader:Set-Cookie"
 ```
 
@@ -786,7 +786,7 @@ Assigns severity to the rule in which it is used.
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_METHOD "^PUT$" "id:340002,rev:1,severity:CRITICAL,msg:'Restricted HTTP function'"
 ```
 
@@ -811,7 +811,7 @@ Special-purpose action that initializes the USER collection using the username p
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule ARGS:username ".*" "phase:2,id:137,t:none,pass,nolog,noauditlog,capture,setvar:session.username=%{TX.0},setuid:%{TX.0}"
 ```
 
@@ -825,7 +825,7 @@ Special-purpose action that initializes the RESOURCE collection using a key prov
 
 **Example:**
 
-``` apache
+``` seclang
 SecAction "phase:1,pass,id:3,log,setrsc:'abcd1234'"
 ```
 
@@ -839,7 +839,7 @@ Special-purpose action that initializes the SESSION collection using the session
 
 **Example:**
 
-``` apache
+``` seclang
 # Initialize session variables using the session cookie value 
 SecRule REQUEST_COOKIES:PHPSESSID !^$ "nolog,pass,id:138,setsid:%{REQUEST_COOKIES.PHPSESSID}"
 ```
@@ -858,7 +858,7 @@ Creates, removes, and updates environment variables that can be accessed by the 
 
 **Examples:**
 
-``` apache
+``` seclang
 SecRule RESPONSE_HEADERS:/Set-Cookie2?/ "(?i:(j?sessionid|(php)?sessid|(asp|jserv|jw)?session[-_]?(id)?|cf(id|token)|sid))" "phase:3,t:none,pass,id:139,nolog,setvar:tx.sessionid=%{matched_var}"
 SecRule TX:SESSIONID "!(?i:\;? ?httponly;?)" "phase:3,id:140,t:none,setenv:httponly_cookie=%{matched_var},pass,log,auditlog,msg:'AppDefect: Missing HttpOnly Cookie Flag.'"
 
@@ -887,7 +887,7 @@ To increase or decrease variable value, use + and - characters in front of a num
 
 Example from OWASP CRS:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bsys\.user_catalog\b" \
         "phase:2,rev:'2.1.3',capture,t:none,t:urlDecodeUni,t:htmlEntityDecode,t:lowercase,t:replaceComments,t:compressWhiteSpace,ctl:auditLogParts=+E, \
 block,msg:'Blind SQL Injection Attack',id:'959517',tag:'WEB_ATTACK/SQL_INJECTION',tag:'WASCTC/WASC-19',tag:'OWASP_TOP_10/A1',tag:'OWASP_AppSensor/CIE1', \
@@ -901,14 +901,14 @@ When used in a chain this action will be executed when an individual rule matche
 
 {{% /notice %}}
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME "@contains /test.php" "chain,id:7,phase:1,t:none,nolog,setvar:tx.auth_attempt=+1" 
     SecRule ARGS_POST:action "@streq login" "t:none"
 ```
 
 - **will increment every time that test.php is visited (regardless of the parameters submitted). If the desired goal is to set the variable only if the entire rule matches, it should be included in the last rule of the chain . For instance**:
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME "@streq test.php" "chain,id:7,phase:1,t:none,nolog"
     SecRule ARGS_POST:action "@streq login" "t:none,setvar:tx.auth_attempt=+1"
 ```
@@ -921,7 +921,7 @@ Skips one or more rules (or chains) on successful match. Internally ModSecurity 
 
 **Example:**
 
-``` apache
+``` seclang
 # Require Accept header, but not from access from the localhost 
 SecRule REMOTE_ADDR "^127\.0\.0\.1$" "phase:1,skip:1,id:141" 
 
@@ -941,7 +941,7 @@ Description: Skips one or more rules (or chains) on a successful match, resuming
 
 **Example:** The following rules implement the same logic as the skip example, but using skipAfter:
 
-``` apache
+``` seclang
 # Require Accept header, but not from access from the localhost 
 SecRule REMOTE_ADDR "^127\.0\.0\.1$" "phase:1,id:143,skipAfter:IGNORE_LOCALHOST" 
 
@@ -952,7 +952,7 @@ SecMarker IGNORE_LOCALHOST
 
 Example from the OWASP ModSecurity CRS:
 
-``` apache
+``` seclang
 SecMarker BEGIN_HOST_CHECK
 
     SecRule &REQUEST_HEADERS:Host "@eq 0" \
@@ -980,7 +980,7 @@ Specifies the response status code to use with actions deny and redirect. ModSec
 
 **Example:**
 
-``` apache
+``` seclang
 # Deny with status 403
 SecDefaultAction "phase:1,log,deny,id:145,status:403"
 ```
@@ -995,7 +995,7 @@ This action is used to specify the transformation pipeline to use to transform t
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule ARGS "(asfunction|javascript|vbscript|data|mocha|livescript):" "id:146,t:none,t:htmlEntityDecode,t:lowercase,t:removeNulls,t:removeWhitespace"
 ```
 
@@ -1009,7 +1009,7 @@ Assigns a tag (category) to a rule or a chain.
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
     "phase:2,rev:'2.1.3',capture,t:none,t:htmlEntityDecode,t:compressWhiteSpace,t:lowercase,ctl:auditLogParts=+E,block,msg:'Cross-site Scripting (XSS) Attack',id:'958016',tag:'WEB_ATTACK/XSS',tag:'WASCTC/WASC-8',tag:'WASCTC/WASC-22',tag:'OWASP_TOP_10/A2',tag:'OWASP_AppSensor/IE1',tag:'PCI/6.5.1',logdata:'% \
 {TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.xss_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/XSS-%{matched_var_name}=%{tx.0}"
@@ -1025,7 +1025,7 @@ Specifies the rule set version. libModSecurity v3 requires the value to be singl
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_FILENAME|ARGS_NAMES|ARGS|XML:/* "\bgetparentfolder\b" \
     "phase:2,ver:'CRS/2.2.4,capture,t:none,t:htmlEntityDecode,t:compressWhiteSpace,t:lowercase,ctl:auditLogParts=+E,block,msg:'Cross-site Scripting (XSS) Attack',id:'958016',tag:'WEB_ATTACK/XSS',tag:'WASCTC/WASC-8',tag:'WASCTC/WASC-22',tag:'OWASP_TOP_10/A2',tag:'OWASP_AppSensor/IE1',tag:'PCI/6.5.1',logdata:'% \
 {TX.0}',severity:'2',setvar:'tx.msg=%{rule.msg}',setvar:tx.xss_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-WEB_ATTACK/XSS-%{matched_var_name}=%{tx.0}"
@@ -1039,7 +1039,7 @@ Configures an XML namespace, which will be used in the execution of XPath expres
 
 **Example:**
 
-``` apache
+``` seclang
 SecRule REQUEST_HEADERS:Content-Type "text/xml" "phase:1,id:147,pass,ctl:requestBodyProcessor=XML,ctl:requestBodyAccess=On, \
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 SecRule XML:/soap:Envelope/soap:Body/q1:getInput/id() "123" phase:2,deny,id:148
