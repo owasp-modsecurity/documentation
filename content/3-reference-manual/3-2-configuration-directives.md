@@ -1228,11 +1228,39 @@ SecRule ARGS "@rx attack" \
 
 The addition of t:none will neutralize any previous transformation functions specified (t:lowercase, in the example).
 
-{{% notice note %}}
+### Updating chained rules
 
-In ModSecurity v2, if the target rule is a chained rule, you must currently specify chain in the SecRuleUpdateActionById action list as well. In libModSecurity v3, action updates to a chained rule may only be made to the main (first) rule in the chain, and the `:offset` suffix is not supported (the ID is parsed as a number).
+The two engines handle updates to rules that are part of a [chain]({{% relref "3-reference-manual/3-5-actions#chain" %}}) differently.
 
-{{% /notice %}}
+**ModSecurity v2** merges the new actions into the rule itself, and the merge always takes the chain flag from the new action list:
+
+- If the target rule has the chain action, **repeat chain in the update**. Otherwise the update removes the rule from the chain: the rules that followed it are then evaluated on their own, and their actions run even when the original chain would not have matched.
+- Do not add chain when updating a rule that does not have it, such as the last rule of a chain. It has been reported that the msg of a chain updated this way is no longer logged.
+- `RULEID:offset` targets a rule inside a chain: offset 0 (the default) is the chain starter, 1 the rule after it, and so on.
+
+``` seclang
+SecRule REQUEST_HEADERS:User-Agent "@rx ^curl" \
+    "id:12346,\
+    phase:2,\
+    pass,\
+    log,\
+    msg:'Example chain',\
+    chain"
+    SecRule REQUEST_HEADERS:Accept "@rx \*/\*" \
+        "t:none"
+
+# Wrong in v2: unchains rule 12346, so the Accept rule runs on its own
+SecRuleUpdateActionById 12346 "deny,status:403"
+
+# Right in v2: the chain is kept
+SecRuleUpdateActionById 12346 "deny,status:403,chain"
+```
+
+**libModSecurity v3** keeps the rule unchanged and applies the updated actions at run time, whenever the rule with that ID is evaluated:
+
+- Only the chain starter can be updated, since the other rules of a chain have no ID. The `:offset` suffix is not supported (the ID is parsed as a number).
+- The chain is never broken, so there is no need to repeat chain. If chain is repeated anyway, for configurations shared with v2, it is ignored and a "General failure" message is printed when the rules are loaded.
+- Every action added by the update, including setvar, runs only when the whole chain matches. This is different from a setvar written on the chain starter itself, which runs as soon as the chain starter matches.
 
 ## SecRuleUpdateTargetById
 
