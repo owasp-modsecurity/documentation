@@ -412,7 +412,9 @@ SecRule ARGS "@pm some key words" "id:12345,deny,status:500"
 
 {{< secmeta v2="no" v3="3.0.10" >}}
 
-libModSecurity v3 only: set to 1 when the @rx or @rxGlobal operator fails with any PCRE error, for example an invalid pattern after macro expansion or a match-limit error (in the latter case MSC_PCRE_LIMITS_EXCEEDED is set as well). ModSecurity v2 has no equivalent variable.
+MSC_PCRE_ERROR will be set to 1 when the @rx or @rxGlobal operator fails with any PCRE error, for example an invalid pattern after macro expansion or a match-limit error (in the latter case MSC_PCRE_LIMITS_EXCEEDED is set as well).
+
+ModSecurity v2 does not provide this as a standalone variable. Since 2.9.16, when the @rx pattern is invalid after macro expansion, or a regex execution fails with an error other than a PCRE limit, v2 sets the transaction variable TX:MSC_PCRE_ERROR to 1. Rule 200005 in modsecurity.conf-recommended (`SecRule TX:/^MSC_/ "!@streq 0"`) catches it. libModSecurity v3 does not set TX:MSC_PCRE_ERROR, so on v3 test the standalone variable instead.
 
 ## MSC_PCRE_LIMITS_EXCEEDED
 
@@ -1391,6 +1393,7 @@ Some variable names in the TX collection are reserved and cannot be used:
 - TX:1-TX:9: the captured subexpression value when using the @rx operator with capturing parens and the capture action. ModSecurity v2 stores at most nine captures (TX:1 to TX:9); libModSecurity v3 stores every capturing group of the expression (the v3 manual documents TX:1 to TX:99).
 - TX:MSC_.*: ModSecurity processing flags
 - MSC_PCRE_LIMITS_EXCEEDED: Set to nonzero if PCRE match limits are exceeded. See SecPcreMatchLimit and SecPcreMatchLimitRecursion for more information.
+- MSC_PCRE_ERROR: Set to 1 by ModSecurity v2 (since 2.9.16) when a regular expression fails with an error other than a PCRE limit, for example an invalid pattern after macro expansion. See MSC_PCRE_ERROR.
 
 ## UNIQUE_ID
 

@@ -661,6 +661,8 @@ Regular expressions are a very powerful tool. You are strongly advised to read t
 
 Macro expansion is supported since ModSecurity 2.6.2: a pattern containing `%{...}` is expanded and compiled on every evaluation instead of once at startup.
 
+If the expanded pattern is not a valid regular expression, or a PCRE limit is exceeded, neither @rx nor !@rx matches. The error is visible through the TX:MSC_PCRE_ERROR or TX:MSC_PCRE_LIMITS_EXCEEDED flag. Before 2.9.16, v2 did not set TX:MSC_PCRE_ERROR, and a negated !@rx matched on these errors.
+
 {{% notice note %}}
 
 libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions. In v3 a pattern that is invalid at load time rejects the rule, a pattern that becomes invalid after macro expansion does not match and sets MSC_PCRE_ERROR, and an empty pattern matches everything. SecPcreMatchLimit is honored since 3.0.10: when the limit is exceeded the operator does not match and MSC_PCRE_LIMITS_EXCEEDED and TX:MSC_PCRE_LIMITS_EXCEEDED are set to 1.
