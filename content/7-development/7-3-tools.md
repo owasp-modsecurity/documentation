@@ -14,7 +14,7 @@ maintainers) produce most of the current tooling.
   [plugin registry](https://github.com/coreruleset/plugin-registry) for application-specific exclusions
   (WordPress, Nextcloud, Drupal, phpBB, phpMyAdmin, DokuWiki, cPanel, XenForo) and add-ons such as the
   DoS-protection, antivirus, body-decompress, fake-bot and auto-decoding plugins.
-- [Comodo free ModSecurity rules](https://waf.comodo.com/) - a commercial vendor's free rule set.
+- [Comodo free ModSecurity rules](https://web.archive.org/web/20260212164915/https://waf.comodo.com/) - a commercial vendor's free rule set.
 
 ## Writing and checking rules
 

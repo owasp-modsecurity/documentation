@@ -441,17 +441,17 @@ These are the reserved ranges:
 - 200,000–299,999: reserved for rules published Comodo
 - 300,000–399,999: reserved for rules published at gotroot.com
 - 400,000–419,999: unused (available for reservation)
-- 420,000–429,999: reserved for ScallyWhack [1](http://projects.otaku42.de/wiki/Scally-Whack)
+- 420,000–429,999: reserved for ScallyWhack [1](https://web.archive.org/web/20120807063638/http://projects.otaku42.de:80/wiki/Scally-Whack)
 - 430,000–439,999: reserved for rules published by Flameeyes [2](http://www.flameeyes.eu/projects/modsec)
 - 440.000-599,999: unused (available for reservation)
 - 600,000-699,999: reserved for use by Akamai [3](http://www.akamai.com/html/solutions/waf.html)
 - 700,000–799,999: reserved for Ivan Ristic
-- 900,000–999,999: reserved for the OWASP CRS [4](http://www.owasp.org/index.php/Category:OWASP_ModSecurity_Core_Rule_Set_Project) project
+- 900,000–999,999: reserved for the OWASP CRS [4](https://coreruleset.org/) project
 - 1,000,000-1,009,999: reserved for rules published by Redhat Security Team
 - 1,010,000-1,999,999: reserved for WAF \| Web Application Firewall and Load Balancer Security (kemptechnologies.com) [5](https://kemptechnologies.com/solutions/waf/)
 - 2,000,000-2,999,999: reserved for rules from Trustwave's SpiderLabs Research team
 - 3,000,000-3,999,999: reserved for use by Akamai [6](http://www.akamai.com/html/solutions/waf.html)
-- 4,000,000-4,099,999 reserved: in use by AviNetworks [7](https://kb.avinetworks.com/docs/latest/vantage-web-app-firewall-beta/)
+- 4,000,000-4,099,999 reserved: in use by AviNetworks
 - 4,100,000-4,199,999 reserved: in use by Fastly [8](https://www.fastly.com/products/cloud-security/#products-cloud-security-web-application-firewall)
 - 4,200,000-4,299,999 reserved: in use by CMS-Garden [9](https://www.cms-garden.org/en)
 - 4,300,000-4,300,999 reserved: in use by Ensim.hu [10](http://ensim.hu/)

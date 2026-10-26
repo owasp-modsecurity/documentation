@@ -325,7 +325,7 @@ Use @inspectFile with caution. It may not be safe to use @inspectFile with varia
 
 {{% /notice %}}
 
-**Reference:** <http://blog.spiderlabs.com/2010/10/advanced-topic-of-the-week-preventing-malicious-pdf-file-uploads.html>
+**Reference:** <https://web.archive.org/web/20121227063516/http://blog.spiderlabs.com:80/2010/10/advanced-topic-of-the-week-preventing-malicious-pdf-file-uploads.html>
 
 **Reference:** <http://sourceforge.net/p/mod-security/mailman/mod-security-users/?viewmonth=201512>
 

@@ -16,8 +16,7 @@ what a good contribution looks like.
   [ModSecurity-apache](https://github.com/owasp-modsecurity/ModSecurity-apache).
 - This documentation: <https://github.com/owasp-modsecurity/documentation> (every page has an edit link).
 - Discussion: the `#project-modsecurity` channel on the [OWASP Slack](https://owasp.org/slack/invite) and
-  the GitHub issue tracker. Questions about configuration and rules are best asked on Slack or as a
-  [GitHub discussion](https://github.com/owasp-modsecurity/ModSecurity/discussions) before opening an issue.
+  the GitHub issue tracker. Questions about configuration and rules are best asked on Slack before opening an issue.
 - Project page: <https://owasp.org/www-project-modsecurity/>, which lists the project leaders. They review
   and merge every pull request.
 

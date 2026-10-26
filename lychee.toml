@@ -1,4 +1,4 @@
-exclude = ["github.com/owasp-modsecurity.*/SECURITY.md", "github.com/owasp-modsecurity.*/.github/.*", "github.com/owasp-modsecurity/ModSecurity/blob/?$"]
+exclude = ["github.com/owasp-modsecurity.*/SECURITY.md", "github.com/owasp-modsecurity.*/.github/.*", "github.com/owasp-modsecurity/ModSecurity/blob/?$", "^https://url/?$", "yourserver\\.com", "linkedin\\.com"]
 user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:132.0) Gecko/20100101 Firefox/132.0"
 no_progress = true
 cache = true
