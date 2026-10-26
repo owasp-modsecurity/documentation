@@ -665,7 +665,7 @@ If the expanded pattern is not a valid regular expression, or a PCRE limit is ex
 
 {{% notice note %}}
 
-libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions. In v3 a pattern that is invalid at load time rejects the rule, a pattern that becomes invalid after macro expansion does not match and sets MSC_PCRE_ERROR, and an empty pattern matches everything. SecPcreMatchLimit is honored since 3.0.10: when the limit is exceeded the operator does not match and MSC_PCRE_LIMITS_EXCEEDED and TX:MSC_PCRE_LIMITS_EXCEEDED are set to 1.
+libModSecurity v3 compiles patterns with PCRE2_DOTALL and PCRE2_MULTILINE instead, so `^` and `$` also match at inner line boundaries. Rules that need line anchors should write `(?m)` explicitly to behave the same in both versions. In v3 a pattern that is invalid at load time rejects the rule, a pattern that becomes invalid after macro expansion does not match and sets MSC_PCRE_ERROR (and, since 3.0.18, TX:MSC_PCRE_ERROR), and an empty pattern matches everything. SecPcreMatchLimit is honored since 3.0.10: when the limit is exceeded the operator does not match and MSC_PCRE_LIMITS_EXCEEDED and TX:MSC_PCRE_LIMITS_EXCEEDED are set to 1.
 
 {{% /notice %}}
 

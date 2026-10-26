@@ -158,8 +158,8 @@ The PCRE limits cap the work a single regular expression may do, against regular
 a limit is hit the engine sets `TX:MSC_PCRE_LIMITS_EXCEEDED` instead of matching, and rule 200005 turns any such
 `MSC_` flag into a denial. Since 2.9.16, v2 also sets `TX:MSC_PCRE_ERROR` when a pattern is invalid after macro
 expansion, and this rule catches it too. In v3 `SecPcreMatchLimitRecursion` is accepted but ignored, and the match limit
-is honored since 3.0.10. v3 reports other regex errors in the standalone `MSC_PCRE_ERROR` variable, which
-`TX:/^MSC_/` does not see.
+is honored since 3.0.10. v3 sets `TX:MSC_PCRE_ERROR` on any regex error since 3.0.18. Earlier v3 releases report
+these errors only in the standalone `MSC_PCRE_ERROR` variable, which `TX:/^MSC_/` does not see.
 
 ## Response body handling
 
