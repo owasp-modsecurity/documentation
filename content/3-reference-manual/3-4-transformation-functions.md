@@ -74,7 +74,7 @@ Decodes a Base64-encoded string. Unlike base64Decode, this version uses a more f
 
 Both engines accept the URL-safe alphabet (`-` and `_`) since ModSecurity 2.9.15 and libModSecurity 3.0.17. ModSecurity v2 skips only space, tab, CR, LF and padding (`=`) characters: any other byte outside the Base64 alphabet makes the whole decode fail and the output is an empty string. It also stops decoding at the first NUL byte in the input. libModSecurity v3 skips every byte outside the alphabet and processes every byte.
 
-See blog post on Base64Decoding evasion issues on PHP sites - <http://blog.spiderlabs.com/2010/04/impedance-mismatch-and-base64.html>
+See the blog post on Base64 decoding evasion issues on PHP sites, [Impedance Mismatch and Base64](https://web.archive.org/web/20110713164920/http://blog.spiderlabs.com/2010/04/impedance-mismatch-and-base64.html) (Internet Archive copy; the original SpiderLabs blog is offline).
 
 ## base64Encode
 

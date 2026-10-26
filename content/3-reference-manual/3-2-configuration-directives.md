@@ -455,7 +455,7 @@ Every rule following a previous `SecDefaultAction` directive in the same configu
 
 {{% notice warning %}}
 
-`SecDefaultAction` is not inherited across configuration contexts. (For an example of why this may be a problem, read the following ModSecurity Blog entry <https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/three-modsecurity-rule-language-annoyances/> .)
+`SecDefaultAction` is not inherited across configuration contexts. (For an example of why this may be a problem, read the following ModSecurity Blog entry <https://web.archive.org/web/20250822051720/https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog/three-modsecurity-rule-language-annoyances/> .)
 
 {{% /notice %}}
 
@@ -572,7 +572,7 @@ ModSecurity relies on the free Google Safe Browsing database that can be obtaine
 
 {{% notice note %}}
 
-Deprecated in 2.7.0 after Google dev team decided to not allow the database download anymore. After registering and obtaining a Safe Browsing API key, you can automatically download the GSB using a tool like wget. For further information on how to proceed with the download, please visit Google's website: <https://developers.google.com/safe-browsing/v3/update-guide>
+Deprecated in 2.7.0 after Google dev team decided to not allow the database download anymore. After registering and obtaining a Safe Browsing API key, you can automatically download the GSB using a tool like wget. For further information on how to proceed with the download, please visit Google's website: <https://developers.google.com/safe-browsing>
 
 {{% /notice %}}
 
@@ -584,7 +584,7 @@ Configures an external program that will receive the information about every tra
 
 libModSecurity v3 rejects this directive with a configuration error, so a configuration containing it cannot be shared between v2 and v3. Guardian logging is designed to send the information about every request to an external program. Because Apache is typically deployed in a multiprocess fashion, which makes information sharing between processes difficult, the idea is to deploy a single external process to observe all requests in a stateful manner, providing additional protection.
 
-Currently the only tool known to work with guardian logging is httpd-guardian, which is part of the Apache httpd tools project [1](http://apache-tools.cvs.sourceforge.net/viewvc/apache-tools/apache-tools/). The httpd-guardian tool is designed to defend against denial of service attacks. It uses the blacklist tool (from the same project) to interact with an iptables-based (on a Linux system) or pf-based (on a BSD system) firewall, dynamically blacklisting the offending IP addresses. It can also interact with SnortSam [2](http://www.snortsam.net). Assuming httpd-guardian is already configured (look into the source code for the detailed instructions), you only need to add one line to your Apache configuration to deploy it. The optional second parameter restricts guardian logging to requests for which the given environment variable is set (or, with the `!` prefix, not set), as with Apache's `CustomLog`:
+Currently the only tool known to work with guardian logging is httpd-guardian, which is part of the Apache httpd tools project [1](http://apache-tools.cvs.sourceforge.net/viewvc/apache-tools/apache-tools/). The httpd-guardian tool is designed to defend against denial of service attacks. It uses the blacklist tool (from the same project) to interact with an iptables-based (on a Linux system) or pf-based (on a BSD system) firewall, dynamically blacklisting the offending IP addresses. It can also interact with SnortSam [2](https://web.archive.org/web/20230328075006/http://snortsam.net/). Assuming httpd-guardian is already configured (look into the source code for the detailed instructions), you only need to add one line to your Apache configuration to deploy it. The optional second parameter restricts guardian logging to requests for which the given environment variable is set (or, with the `!` prefix, not set), as with Apache's `CustomLog`:
 
 ``` seclang
 SecGuardianLog |/path/to/httpd-guardian
@@ -704,7 +704,7 @@ Establishes a per-IP address limit of how many connections are allowed to be in 
 
 {{< secmeta syntax="SecConnReadStateLimit LIMIT OPTIONAL_IP_MATCH_OPERATOR" example=`SecConnReadStateLimit 50 "!@ipMatch 127.0.0.1"` default="0 (no limit)" scope="Any" v2="2.8.0" v3="no" >}}
 
-This measure is effective against Slowloris-style attacks from a single IP address, but it may not be as good against modified attacks that work by slowly sending request body content. This is because Apache to switches state to SERVER_BUSY_WRITE once request headers have been read. As an alternative, consider mod_reqtimeout (part of Apache as of 2.2.15), which is expected be effective against both attack types. See Blog post on mitigating slow DoS attacks - <http://blog.spiderlabs.com/2010/11/advanced-topic-of-the-week-mitigating-slow-http-dos-attacks.html>. v2.8.0 and newest supports the @ipMatch, @ipMatchF and @ipMatchFromFile operator along with the its negative (e.g. !@ipMatch) these were used to create suspicious or whitelist. When a suspicious list is informed, just the IPs that belongs to the list will be filtered. A combination of suspicious and whitelist is possible by using multiple definitions of SecConnReadStateLimit, note, however, that the limit will be always overwrite by its successor.
+This measure is effective against Slowloris-style attacks from a single IP address, but it may not be as good against modified attacks that work by slowly sending request body content. This is because Apache to switches state to SERVER_BUSY_WRITE once request headers have been read. As an alternative, consider mod_reqtimeout (part of Apache as of 2.2.15), which is expected be effective against both attack types. See Blog post on mitigating slow DoS attacks - <https://web.archive.org/web/20110330162606/http://blog.spiderlabs.com/2010/11/advanced-topic-of-the-week-mitigating-slow-http-dos-attacks.html>. v2.8.0 and newest supports the @ipMatch, @ipMatchF and @ipMatchFromFile operator along with the its negative (e.g. !@ipMatch) these were used to create suspicious or whitelist. When a suspicious list is informed, just the IPs that belongs to the list will be filtered. A combination of suspicious and whitelist is possible by using multiple definitions of SecConnReadStateLimit, note, however, that the limit will be always overwrite by its successor.
 
 LIMIT must be greater than zero.
 

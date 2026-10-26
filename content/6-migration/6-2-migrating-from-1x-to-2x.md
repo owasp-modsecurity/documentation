@@ -213,7 +213,7 @@ In Mod 2.x, using the “allow” action may not be enough to truly let a reques
 
 **How To Upgrade**
 
-See Blog post on handling false positives and creating custom rules - http://blog.spiderlabs.com/2010/11/modsecurity-advanced-topic-of-the-week-exception-handling.html
+See Blog post on handling false positives and creating custom rules - https://web.archive.org/web/20110612004522/http://blog.spiderlabs.com:80/2010/11/modsecurity-advanced-topic-of-the-week-exception-handling.html
 
 ## Directive to control rule inheritance to Apache Scope locations (Virtual Hosts, Location, Directory)
 

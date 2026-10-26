@@ -10,7 +10,7 @@ Below are a number of suggestions for students interested in the ModSecurity pro
 **Brief explanation:** Adding the capability of rapid prototyping to ModSecurity functionalities through scripts will open the possibility for easy rules production and customization, It also opens the possibility for a large community such as Ruby developers to create their own customization on the top of ModSecurity and so customize their own rules, analogous of today's Lua support.			
 **Expected results:** An implementation able to handle Ruby scripts which will interact to ModSecurity as Lua does.			
 **References:**
-- Embedding Ruby into C++ (ModSecurity is C, using C++ as reference): http://aeditor.rubyforge.org/ruby_cplusplus/index.html
+- Embedding Ruby into C++ (ModSecurity is C, using C++ as reference): https://web.archive.org/web/20160415222459/http://aeditor.rubyforge.org/ruby_cplusplus/index.html
 - ModSecurity Reference Manual, Lua:{{% relref "3-reference-manual/3-2-configuration-directives#secrulescript" %}}"	
 
 ###ModSecurity JavaScript support			
@@ -24,7 +24,7 @@ Below are a number of suggestions for students interested in the ModSecurity pro
 Expected results: A connector which will allow ModSecurity to be used inside node.js			
 **References:**
 - ModSecurity version 3.0:
-https://www.trustwave.com/Resources/SpiderLabs-Blog/An-Overview-of-the-Upcoming-libModSecurity/?page=1&year=0&month=0
+https://web.archive.org/web/20180313114027/https://www.trustwave.com/Resources/SpiderLabs-Blog/An-Overview-of-the-Upcoming-libModSecurity/
 - ModSecurity nginx connector:
 https://github.com/SpiderLabs/ModSecurity-nginx"
 
@@ -33,7 +33,7 @@ https://github.com/SpiderLabs/ModSecurity-nginx"
 Expected results: A workable but no feature complete connector which will allow ModSecurity v3 to be used inside Apache			
 **References:**
 - ModSecurity version 3.0:
-https://www.trustwave.com/Resources/SpiderLabs-Blog/An-Overview-of-the-Upcoming-libModSecurity/?page=1&year=0&month=0
+https://web.archive.org/web/20180313114027/https://www.trustwave.com/Resources/SpiderLabs-Blog/An-Overview-of-the-Upcoming-libModSecurity/
 - ModSecurity nginx connector:
 https://github.com/SpiderLabs/ModSecurity-nginx"
 
@@ -70,7 +70,7 @@ t:encrypt(%{TX.mykey}%)
 ###ModSecurity sub-phases
 **Brief explanation:** ModSecurity supports real phases 1-4 and the 'virtual' one 5. Having intermediate virtual phases, like phase:2.2, would allow to order rules inside a real phase. This is especially useful for configurations integrating rules provided, for example, by a hoster and customs ones.   
 **Expected results:** Rules will be ordered, inside a phase, not only based on their occurence but also based on their sub-phase.  
-**References:** https://github.com/SpiderLabs/ModSecurity/issues/371  
+**References:** https://github.com/owasp-modsecurity/ModSecurity/issues/371  
 **Example:**  
 - SecRule ... phase:2.6,id:1  
 - SecRule ... phase:2,id:2  
