@@ -1186,7 +1186,7 @@ SecRule ARGS "@rx attack" \
 ``` lua
 function main()
     local rule_id = m.getvar("TX.rule_id");
-    m.log(4, "Called from rule " .. rule_id);
+    m.log(4, "Called from rule " .. tostring(rule_id));
     return nil;
 end
 ```
