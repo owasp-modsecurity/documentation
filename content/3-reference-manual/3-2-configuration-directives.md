@@ -1191,7 +1191,7 @@ function main()
 end
 ```
 
-This works in a SecRule. In a SecAction or a SecRuleScript rule, libModSecurity v3 currently expands %{RULE.id} to an empty string, so set the value as a constant there, for example setvar:tx.rule_id=100. libModSecurity v3 runs the setvar actions of a SecRuleScript rule before the script, so the constant can be set in the SecRuleScript rule itself.
+This works in a SecRule. In a SecAction or a SecRuleScript rule, libModSecurity v3 currently expands %{RULE.id} to an empty string ([#3733](https://github.com/owasp-modsecurity/ModSecurity/issues/3733)), so set the value as a constant there, for example setvar:tx.rule_id=100. libModSecurity v3 runs the setvar actions of a SecRuleScript rule before the script, so the constant can be set in the SecRuleScript rule itself.
 
 {{% /notice %}}
 
