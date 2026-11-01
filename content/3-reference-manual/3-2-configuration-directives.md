@@ -1146,6 +1146,12 @@ function main()
 end
 ```
 
+{{% notice note %}}
+
+m.log(level, text) writes text to the debug log (see [SecDebugLog](#secdebuglog)), and only if [SecDebugLogLevel](#secdebugloglevel) is set to level or higher. In ModSecurity v2, messages at levels 1–3 are also copied to the Apache error log. libModSecurity v3 writes them only to the debug log, never to the web server's error log or the console, and a library built with --disable-debug-logs doesn't write them at all.
+
+{{% /notice %}}
+
 In this first example we were only retrieving one variable at the time. In this case the name of the variable is known to you. In many cases, however, you will want to examine variables whose names you won't know in advance, for example script parameters.
 
 Example showing use of m.getvars() to retrieve many variables at once:
