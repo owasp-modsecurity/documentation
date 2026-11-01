@@ -1196,7 +1196,11 @@ This variable contains the local port that the web server (or reverse proxy) is 
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable is a collection that contains session information. It becomes available only after setsid is executed. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
+This variable is a collection that contains session information. It must be initialized with the [setsid]({{% relref "3-reference-manual/3-5-actions#setsid" %}}) action before it is read or written. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
+
+{{% notice warning %}}
+Use SESSION only after setsid has run with a non-empty session token, for example by checking the token in the rule that calls setsid, as in the example below. libModSecurity v3 does not reject SESSION without setsid: the data is then stored without a session key, so it is shared by every transaction that does the same, whatever session it belongs to. In a build that uses LMDB, it can also overwrite, and be overwritten by, a variable with the same name in another collection that has no key either, for example GLOBAL used without initcol.
+{{% /notice %}}
 
 The following example shows how to initialize SESSION using setsid, how to use setvar to increase the SESSION.score values, how to set the SESSION.blocked variable, and finally, how to deny the connection based on the <SESSION:blocked> value:
 
