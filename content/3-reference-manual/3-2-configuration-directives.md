@@ -1148,7 +1148,7 @@ end
 
 {{% notice note %}}
 
-m.log(level, text) writes text to the debug log (see [SecDebugLog](#secdebuglog)), and only if [SecDebugLogLevel](#secdebugloglevel) is set to level or higher. In ModSecurity v2, messages at levels 1–3 are also copied to the Apache error log. libModSecurity v3 writes them only to the debug log, never to the web server's error log or the console, and a library built with --disable-debug-logs doesn't write them at all.
+m.log(level, text) writes text to the debug log (see [SecDebugLog](#secdebuglog)) if [SecDebugLogLevel](#secdebugloglevel) is set to level or higher. In ModSecurity v2, messages at levels 1–3 also always go to the Apache error log and to the audit log, whatever SecDebugLogLevel is set to. libModSecurity v3 writes them only to the debug log, never to the web server's error log or the console, and a library built with --disable-debug-logs doesn't write them at all.
 
 {{% /notice %}}
 
