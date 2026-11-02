@@ -1172,6 +1172,31 @@ end
 
 {{% notice note %}}
 
+In libModSecurity v3, m.getvar() and m.getvars() can't read the [RULE]({{% relref "3-reference-manual/3-3-variables#rule" %}}) collection, because the Lua API has no access to the rule that runs the script. In libModSecurity 3.0.17 and earlier, calling them with RULE, or with any other variable name the Lua API doesn't know, aborts the process ([#3728](https://github.com/owasp-modsecurity/ModSecurity/issues/3728)); later versions return nil from m.getvar() and an empty table from m.getvars(), and write a debug log message. If a script started with the exec action needs a field of its rule, copy it into a transaction variable with setvar in the same rule (libModSecurity v3 runs setvar before exec), and read that variable from the script:
+
+``` seclang
+SecRule ARGS "@rx attack" \
+    "id:100,\
+    phase:2,\
+    pass,\
+    setvar:tx.rule_id=%{RULE.id},\
+    exec:/path/to/script.lua"
+```
+
+``` lua
+function main()
+    local rule_id = m.getvar("TX.rule_id");
+    m.log(4, "Called from rule " .. tostring(rule_id));
+    return nil;
+end
+```
+
+This works in a SecRule. In a SecAction or a SecRuleScript rule, libModSecurity v3 currently expands %{RULE.id} to an empty string ([#3733](https://github.com/owasp-modsecurity/ModSecurity/issues/3733)), so set the value as a constant there, for example setvar:tx.rule_id=100. libModSecurity v3 runs the setvar actions of a SecRuleScript rule before the script, so the constant can be set in the SecRuleScript rule itself.
+
+{{% /notice %}}
+
+{{% notice note %}}
+
 Go to <http://www.lua.org/> to find more about the Lua programming language. The reference manual too is available online, at <http://www.lua.org/manual/5.1/> (ModSecurity v2) and <http://www.lua.org/manual/5.2/> (libModSecurity v3).
 
 {{% /notice %}}

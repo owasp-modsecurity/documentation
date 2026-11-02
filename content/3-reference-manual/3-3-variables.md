@@ -1050,7 +1050,7 @@ This variable may not work as expected in embedded mode, as Apache sometimes han
 
 This is a special collection that provides access to the id, rev, severity, msg, logdata, ver, maturity, and accuracy fields of the rule that triggered the action. It can be used to refer to only the same rule in which it resides; a field name is mandatory (RULE:id, or %{RULE.id} in macros), and inside a chain the fields are those of the chain starter.
 
-libModSecurity v3 exposes only id, rev, severity, msg and logdata (ver, maturity and accuracy are not available); it also accepts a bare RULE, which returns all five, and a regular-expression selector.
+libModSecurity v3 exposes only id, rev, severity, msg and logdata (ver, maturity and accuracy are not available); it also accepts a bare RULE, which returns all five, and a regular-expression selector. In libModSecurity v3, RULE can't be read from Lua; see [SecRuleScript]({{% relref "3-reference-manual/3-2-configuration-directives#secrulescript" %}}) for a workaround.
 
 `SecRule &REQUEST_HEADERS:Host "@eq 0" "log,deny,id:59,setvar:tx.varname=%{RULE.id}"`
 
