@@ -1188,6 +1188,18 @@ libModSecurity (aka v3) is compatible with Lua 5.2+.
 
 {{% /notice %}}
 
+{{% notice note %}}
+
+In libModSecurity 3.0.17 and earlier, m.getvars() ignores its second parameter and returns the values without any transformation, so the m.getvars() example above doesn't find `<script` in `&LT;SCRIPT` ([#3737](https://github.com/owasp-modsecurity/ModSecurity/issues/3737)). In these versions, transform the values in the script, or call m.getvar() with the transformations for each variable you need. m.getvar() applies its transformations in every version.
+
+These versions, and ModSecurity 2.9.15 and earlier, also handle the list of transformation names differently from later versions:
+
+- A list with more than 20 names can write past the Lua stack and crash the process (in ModSecurity v2, the Apache child process).
+- An entry that is neither a string nor a number, such as a table, makes the script fail with a "bad argument" error, and a number is taken as a transformation name. Later versions skip both and write a debug log message.
+- In libModSecurity, "none" doesn't cancel the transformations before it in the list, and a name that contains a colon, such as "lowercase:", aborts the process. In later versions, "none" starts the list over, as it always has in ModSecurity v2, and a name with a colon is rejected as an invalid transformation function.
+
+{{% /notice %}}
+
 ## SecRuleUpdateActionById
 
 Updates the action list of the specified rule.
