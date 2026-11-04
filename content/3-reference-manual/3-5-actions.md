@@ -229,8 +229,39 @@ The following directives can be used in rule chains:
 Special rules control the usage of actions in chained rules:
 
 - Any actions that affect the rule flow (i.e., the disruptive actions, skip and skipAfter) can be used only in the chain starter. They will be executed only if the entire chain matches.
-- Non-disruptive actions can be used in any rule; they will be executed if the rule that contains them matches and not only when the entire chain matches. In libModSecurity v3 this is true only for setvar: every other non-disruptive action in a chained rule (ctl, setenv, exec, log, ...) runs only once the whole chain has matched.
+- Non-disruptive actions can be used in any rule of the chain. The rules of a chain are evaluated in order, and evaluation stops at the first rule that does not match. A non-disruptive action therefore runs once the rule that contains it **and every rule before it** in the chain have matched; the rules after it play no part. The engines differ in which actions this applies to:
+    - **ModSecurity v2**: every non-disruptive action (setvar, ctl, setenv, exec, ...).
+    - **libModSecurity v3**: only setvar. Every other non-disruptive action in a chained rule (ctl, setenv, exec, ...) runs only once the whole chain has matched.
 - The metadata actions (e.g., id, rev, msg) can be used only in the chain starter.
+
+Example, with a request whose User-Agent starts with `curl`, whose Accept header is `*/*` and whose Host is `localhost`:
+
+``` seclang
+SecAction \
+    "id:106,\
+    phase:1,\
+    pass,\
+    nolog,\
+    setvar:'tx.counter=0'"
+
+SecRule REQUEST_HEADERS:User-Agent "@rx ^curl" \
+    "id:107,\
+    phase:2,\
+    pass,\
+    log,\
+    msg:'Example chain',\
+    setvar:'tx.counter=+1',\
+    chain"
+    SecRule REQUEST_HEADERS:Accept "@rx \*/\*" \
+        "setvar:'tx.counter=+2',\
+        chain"
+        SecRule REQUEST_HEADERS:Host "@rx ^example\.com$" \
+            "setvar:'tx.counter=+4'"
+```
+
+The first two rules match and the third does not, so the chain as a whole does not match, but `tx.counter` ends up as 3: the setvar actions of the first two rules ran. If the User-Agent did not start with `curl`, `tx.counter` would stay 0 even though the Accept rule would have matched, because the rest of the chain is never evaluated once a rule fails.
+
+Take extra care when changing the actions of a chained rule with SecRuleUpdateActionById: the two engines treat chains differently there, see [SecRuleUpdateActionById]({{% relref "3-reference-manual/3-2-configuration-directives#secruleupdateactionbyid" %}}).
 
 ## ctl
 
