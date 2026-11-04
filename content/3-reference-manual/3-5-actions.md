@@ -1033,7 +1033,7 @@ SecRule REQUEST_COOKIES:PHPSESSID "!@rx ^$" \
 
 Note
 
-After the initialization takes place, the variable SESSION will be available for use in the subsequent rules. This action understands application namespaces (configured using SecWebAppId), and will use one if it is configured.
+After the initialization takes place, the variable SESSION will be available for use in the subsequent rules. Don't use SESSION before setsid has run; see [SESSION]({{% relref "3-reference-manual/3-3-variables#session" %}}) for what happens in libModSecurity v3 if you do. This action understands application namespaces (configured using SecWebAppId), and will use one if it is configured.
 
 Setsid takes an individual variable, not a collection. Variables within an action, such as setsid, use the format [collection].[variable] .
 

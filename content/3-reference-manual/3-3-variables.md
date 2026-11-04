@@ -1196,9 +1196,13 @@ This variable contains the local port that the web server (or reverse proxy) is 
 
 {{< secmeta v2="yes" v3="yes" >}}
 
-This variable is a collection that contains session information. It becomes available only after setsid is executed. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
+This variable is a collection that contains session information. It must be initialized with the [setsid]({{% relref "3-reference-manual/3-5-actions#setsid" %}}) action before it is read or written. In ModSecurity v2 a selector is mandatory (SESSION:name or SESSION:/regex/). For where libModSecurity v3 stores the data, see GLOBAL.
 
-The following example shows how to initialize SESSION using setsid, how to use setvar to increase the SESSION.score values, how to set the SESSION.blocked variable, and finally, how to deny the connection based on the <SESSION:blocked> value:
+{{% notice warning %}}
+Use SESSION only after setsid has run with a non-empty session token, for example by skipping the rules that use SESSION when SESSIONID is empty, as in the example below. libModSecurity v3 does not reject SESSION without setsid: the data is then stored without a session key, so it is shared by every transaction that does the same, whatever session it belongs to. In a build that uses LMDB, it can also overwrite, and be overwritten by, a variable with the same name in another collection that has no key either, for example GLOBAL used without initcol.
+{{% /notice %}}
+
+The following example shows how to initialize SESSION using setsid, how to skip the SESSION rules if there is no session, how to use setvar to increase the SESSION.score values, how to set the SESSION.blocked variable, and finally, how to deny the connection based on the <SESSION:blocked> value:
 
 ``` seclang
 # Initialize session storage
@@ -1209,9 +1213,17 @@ SecRule REQUEST_COOKIES:PHPSESSID "!@rx ^$" \
     nolog,\
     setsid:%{REQUEST_COOKIES.PHPSESSID}"
 
+# Skip the SESSION rules if setsid didn't run
+SecRule SESSIONID "@rx ^$" \
+    "id:71,\
+    phase:2,\
+    pass,\
+    nolog,\
+    skipAfter:END_SESSION_RULES"
+
 # Increment session score on attack
 SecRule REQUEST_URI "@rx ^/cgi-bin/finger$" \
-    "id:71,\
+    "id:72,\
     phase:2,\
     pass,\
     t:none,\
@@ -1220,10 +1232,12 @@ SecRule REQUEST_URI "@rx ^/cgi-bin/finger$" \
     setvar:SESSION.score=+10"
 
 # Detect too many attacks in a session
-SecRule SESSION:score "@gt 50" "id:72,phase:2,pass,setvar:SESSION.blocked=1"
+SecRule SESSION:score "@gt 50" "id:73,phase:2,pass,setvar:SESSION.blocked=1"
 
 # Enforce session block
-SecRule SESSION:blocked "@eq 1" "id:73,phase:2,deny,status:403"
+SecRule SESSION:blocked "@eq 1" "id:74,phase:2,deny,status:403"
+
+SecMarker END_SESSION_RULES
 ```
 
 ## SESSIONID
