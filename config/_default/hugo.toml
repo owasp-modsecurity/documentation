@@ -9,6 +9,7 @@ title = "ModSecurity Documentation"
 
 [outputs]
 home = ['html', 'rss', 'print']
+section = ['html', 'rss', 'print']
 
 [markup.goldmark.renderer]
   unsafe = true
